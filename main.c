@@ -14,6 +14,11 @@
 int main(void)
 {
   InitUart();
+  InitAdc();
+  InitTimer0();
+  InitTimer2();
+  InitIO();
+
   sei();
   while (1)
     ;

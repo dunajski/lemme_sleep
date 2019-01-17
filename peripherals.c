@@ -24,7 +24,7 @@ void InitUart(void)  //Inicjowanie portu UART
 }
 void InitTimer0(void)
 {
-  // Interwa� czasu 10 ms / interrupt /  CTC   // f CTC = fio/(2*presc*(1+OCR) -> t = 10 ms 1/t = fCTC -> 1/10ms -> 100 Hz
+  // Interwal czasu 10 ms / interrupt /  CTC   // f CTC = fio/(2*presc*(1+OCR) -> t = 10 ms 1/t = fCTC -> 1/10ms -> 100 Hz
   // OCR ~= 77 5ms , OCR ~=155 10ms // presc 256 8 000 000 / 256 = 31250
   TCCR0 |= (1 << WGM01) | (1 << CS02);  // // preskaler 256  | CTC
   TIMSK |= (1 << OCIE0);  // flaga przerwania | wykonanie przerwana
@@ -38,7 +38,12 @@ void InitTimer2(void)
 }
 void InitAdc(void)
 {
-  ADMUX |= (1 << REFS0);  // avcc[niepod��czony kondek na avcc a gnd-celowo]
+  ADMUX |= (1 << REFS0);  // avcc[niepodlaczony kondek na avcc a gnd-celowo]
   ADCSRA |= (1 << ADEN) | (1 << ADSC) | (1 << ADATE) | (1 << ADIE) | (1 << ADPS1) | (1 << ADPS2);
   // wl. ADC/start konwersji/autotriger EN/interrupt execute EN/ presk 64  f_adc=8MHz/64=125kHz
+}
+
+void InitIO (void)
+{
+  //TODO input output key etc.
 }
