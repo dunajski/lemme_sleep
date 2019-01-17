@@ -2,13 +2,14 @@
  * main.c
  *      Author: Dunajski
  *      thesis
- *
  */
 #include <stdio.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#include "types.h"
+#include "communication.h"
+#include "peripherals.h"
+//#include "types.h"
 
 int main(void)
 {
