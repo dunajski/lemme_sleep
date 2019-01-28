@@ -12,5 +12,6 @@ void InitUart(void);
 void InitTimer0(void);
 void InitTimer2(void);
 void InitAdc(void);
+void InitIO(void);
 
 #endif /* PERIPHERALS_H_ */
