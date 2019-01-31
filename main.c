@@ -9,7 +9,8 @@
 
 #include "communication.h"
 #include "peripherals.h"
-//#include "types.h"
+
+unsigned char * p_dada;
 
 int main(void)
 {
@@ -18,10 +19,17 @@ int main(void)
   InitTimer0();
   InitTimer2();
   InitIO();
-
+  uint8_t i = 0;
   sei();
   while (1)
-    ;
+  {
+    if (GetFromSerial(p_dada))
+    {
+      PutUInt8ToSerial(i++);
+      if (i > UINT8_MAX)
+        i = 0;
+    }
+  }
 
   return 0;
 }

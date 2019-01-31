@@ -10,7 +10,7 @@
 #include <avr/interrupt.h>
 
 
-void PutIntToSerial (uint8_t integer);
+void PutUInt8ToSerial (uint8_t integer);
 void PutToSerial(unsigned char data);
 unsigned char GetFromSerial(unsigned char *p_dada);
 void StrToSerial(char *msg);

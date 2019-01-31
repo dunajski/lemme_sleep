@@ -12,7 +12,7 @@
 #define BAUDRATE 9600L//115200L
 #define BAUD_REG ((F_CPU/(16*BAUDRATE))-1) //dzielnika cz. UBRR
 
-void PutIntToSerial(uint8_t integer)
+void PutUInt8ToSerial(uint8_t integer)
 {
   if (integer >= 100)
     PutToSerial((((integer % 1000) - (integer % 100)) / 100 + 0x30));  // setki
