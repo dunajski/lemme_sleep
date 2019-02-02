@@ -6,16 +6,13 @@
  */
 #include "random.h"
 #include <avr/interrupt.h>
+//ISR to turn on motor
 ISR(TIMER0_COMP_vect)
 {
 
 }
 
-ISR(TIMER2_COMP_vect)
-{
-
-}
-
+//getting random variables
 ISR(ADC_vect)
 {
 

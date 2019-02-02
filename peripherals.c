@@ -4,8 +4,15 @@
  *  Created on: 17 sty 2019
  *      Author: Dunajski
  */
+
+
+#include <avr/interrupt.h>
+#include <avr/iom32.h>
+#include <stdint.h>
+
 #include "peripherals.h"
-#include <avr/io.h>
+#include "communication.h"
+
 
 #define FIFO_LEN 128 //dlugosc kolejek FIFO
 
@@ -23,6 +30,7 @@ struct PortABits
 };
 
 typedef struct PortABits TPortABits;
+
 
 #define state_led_val ((TPortABits *)&PINA)->state_led
 #define state_led_dir ((TPortABits *)&DDRA)->state_led
@@ -43,6 +51,14 @@ typedef struct PortABits TPortABits;
 #define adc_pin_val ((TPortABits *)&PINA)->adc_pin
 #define adc_pin_dir ((TPortABits *)&DDRA)->adc_pin
 #define adc_pin_pullup ((TPortABits *)&PORTA)->adc_pin
+
+typedef enum DeviceStates
+{
+  energy_save,
+  losowanie,
+  nadawanie,
+  interakcja,
+} TState;
 
 void InitUart(void)
 {
@@ -78,7 +94,7 @@ void InitIO(void)
 {
   state_led_dir = 1;
   debug_led_dir = 1;
-  motor_dir  = 1;
+  motor_dir = 1;
   action_key_dir = 0;
   adc_pin_dir = 0;
 
@@ -86,6 +102,42 @@ void InitIO(void)
   adc_pin_pullup = 0;
 }
 
+// isr to debounce key and measure feedback
+//ISR 0,4ms
+// keycnt 200 then 0,4 * 200 = 80ms
+ISR(TIMER2_COMP_vect)
+{
+  static uint16_t keycnt = 0;
+  static uint8_t keylev = 0;
+  static uint8_t keyr = 0;
 
+  if (keycnt == 0)
+  {
+    switch (keylev)
+    {
+      case 0:  // waiting for press
+        if (!action_key_val)
+        {
+          keyr = action_key_val;
+          keylev = 1;
+          keycnt = 200;
+        }
+      break;
+      case 1: // pressed,debounced
+        if (action_key_val == keyr)
+        {
+          keylev = 2;
+          StrToSerial("ButtonPressed");
+        }
+      break;
+      case 2:
+        if (action_key_val == 1)
+          keylev = 0;
+      break;
+    }
+  }
 
+  if (keycnt > 0)
+    keycnt--;
+}
 
