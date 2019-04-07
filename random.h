@@ -8,6 +8,10 @@
 #ifndef RANDOM_H_
 #define RANDOM_H_
 
+#define TurnADCOn ADCSRA|=(1<<ADEN)
+#define TurnADCOff ADCSRA&=~(1<<ADEN)
 
+extern unsigned char random_bytes[10];
 
+void PrintRandomBytes(void);
 #endif /* RANDOM_H_ */

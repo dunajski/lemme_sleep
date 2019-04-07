@@ -15,11 +15,11 @@
 void PutUInt8ToSerial(uint8_t integer)
 {
   if (integer >= 100)
-    PutToSerial((((integer % 1000) - (integer % 100)) / 100 + 0x30));  // setki
+    PutToSerial((((integer % 1000) - (integer % 100)) / 100 + '0'));  // setki
   if (integer >= 10)
-    PutToSerial((((integer % 100) - (integer % 10)) / 10) + 0x30);  // dziesiatki
+    PutToSerial((((integer % 100) - (integer % 10)) / 10) + '0');  // dziesiatki
 
-  PutToSerial(integer % 10 + 0x30);
+  PutToSerial(integer % 10 + '0');
 }
 
 struct

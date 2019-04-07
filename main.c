@@ -10,7 +10,6 @@
 #include "communication.h"
 #include "peripherals.h"
 
-unsigned char * p_dada;
 
 int main(void)
 {

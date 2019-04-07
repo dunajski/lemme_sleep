@@ -4,15 +4,13 @@
  *  Created on: 17 sty 2019
  *      Author: Dunajski
  */
-
-
 #include <avr/interrupt.h>
 #include <avr/iom32.h>
 #include <stdint.h>
 
-#include "peripherals.h"
 #include "communication.h"
-
+#include "peripherals.h"
+#include "random.h"
 
 #define FIFO_LEN 128 //dlugosc kolejek FIFO
 
@@ -31,34 +29,33 @@ struct PortABits
 
 typedef struct PortABits TPortABits;
 
+#define STATE_LED_VAL ((TPortABits *)&PINA)->state_led
+#define STATE_LED_DIR ((TPortABits *)&DDRA)->state_led
+#define STATE_LED_OUT ((TPortABits *)&PORTA)->state_led
 
-#define state_led_val ((TPortABits *)&PINA)->state_led
-#define state_led_dir ((TPortABits *)&DDRA)->state_led
-#define state_led_out ((TPortABits *)&PORTA)->state_led
+#define DEBUG_LED_VAL ((TPortABits *)&PINA)->debug_led
+#define DEBUG_LED_DIR  ((TPortABits *)&DDRA)->debug_led
+#define DEBUG_LED_OUT ((TPortABits *)&PORTA)->debug_led
 
-#define debug_led_val ((TPortABits *)&PINA)->debug_led
-#define debug_led_dir  ((TPortABits *)&DDRA)->debug_led
-#define debug_led_out ((TPortABits *)&PORTA)->debug_led
+#define MOTOR_VAL ((TPortABits *)&PINA)->motor
+#define MOTOR_DIR ((TPortABits *)&DDRA)->motor
+#define MOTOR_OUT ((TPortABits *)&PORTA)->motor
 
-#define motor_val ((TPortABits *)&PINA)->motor
-#define motor_dir ((TPortABits *)&DDRA)->motor
-#define motor_out ((TPortABits *)&PORTA)->motor
+#define ACTION_KEY_VAL ((TPortABits *)&PINA)->action_key
+#define ACTION_KEY_DIR  ((TPortABits *)&DDRA)->action_key
+#define ACTION_KEY_PULLUP ((TPortABits *)&PORTA)->action_key
 
-#define action_key_val ((TPortABits *)&PINA)->action_key
-#define action_key_dir  ((TPortABits *)&DDRA)->action_key
-#define action_key_pullup ((TPortABits *)&PORTA)->action_key
-
-#define adc_pin_val ((TPortABits *)&PINA)->adc_pin
-#define adc_pin_dir ((TPortABits *)&DDRA)->adc_pin
-#define adc_pin_pullup ((TPortABits *)&PORTA)->adc_pin
+#define ADC_PIN_VAL ((TPortABits *)&PINA)->adc_pin
+#define ADC_PIN_DIR ((TPortABits *)&DDRA)->adc_pin
+#define ADC_PIN_PULLUP ((TPortABits *)&PORTA)->adc_pin
 
 typedef enum DeviceStates
 {
-  energy_save,
-  losowanie,
-  nadawanie,
-  interakcja,
-} TState;
+  POWER_SAFE,
+  LOSOWANIE,
+  NADAWANIE,
+  INTERAKCJA,
+} TDeviceState;
 
 void InitUart(void)
 {
@@ -69,6 +66,7 @@ void InitUart(void)
   UCSRB |= ((1 << RXEN) | (1 << TXEN));  // RX/TX enable
   UCSRB |= (1 << RXCIE);  //RX ISR enable
 }
+
 void InitTimer0(void)
 {
   // ISR execute period 10 ms / interrupt /  CTC   // f CTC = fio/(2*presc*(1+OCR) -> t = 10 ms 1/t = fCTC -> 1/10ms -> 100 Hz
@@ -85,21 +83,23 @@ void InitTimer2(void)
 }
 void InitAdc(void)
 {
-  ADMUX |= (1 << REFS0);  //drfting pin
+  //ADMUX |= (1 << REFS0);  //drfting pin lepiej na AREFie bez niczego
   ADCSRA |= (1 << ADEN) | (1 << ADSC) | (1 << ADATE) | (1 << ADIE) | (1 << ADPS1) | (1 << ADPS2);
   // ADC ENABLE/start conversion/autotriger EN/interrupt execute EN/ presk 64  f_adc=8MHz/64=125kHz
 }
 
 void InitIO(void)
 {
-  state_led_dir = 1;
-  debug_led_dir = 1;
-  motor_dir = 1;
-  action_key_dir = 0;
-  adc_pin_dir = 0;
+  STATE_LED_DIR = 1;
+  DEBUG_LED_DIR = 1;
 
-  action_key_pullup = 1;
-  adc_pin_pullup = 0;
+  MOTOR_DIR = 1;
+
+  ACTION_KEY_PULLUP = 1;
+  ACTION_KEY_DIR = 0;
+
+  ADC_PIN_DIR = 0; // wejscie
+  ADC_PIN_PULLUP = 0; // bez pullupu, niech dryfuje
 }
 
 // isr to debounce key and measure feedback
@@ -116,22 +116,24 @@ ISR(TIMER2_COMP_vect)
     switch (keylev)
     {
       case 0:  // waiting for press
-        if (!action_key_val)
+        if (!ACTION_KEY_VAL)
         {
-          keyr = action_key_val;
+          keyr = ACTION_KEY_VAL;
           keylev = 1;
           keycnt = 200;
         }
       break;
       case 1: // pressed,debounced
-        if (action_key_val == keyr)
+        if (ACTION_KEY_VAL == keyr)
         {
           keylev = 2;
           StrToSerial("ButtonPressed");
+          StrToSerial("\n");
+          PutToSerial(random_bytes[1]);
         }
       break;
       case 2:
-        if (action_key_val == 1)
+        if (ACTION_KEY_VAL == 1)
           keylev = 0;
       break;
     }

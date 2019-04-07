@@ -13,5 +13,7 @@
 #define CLEAR_BIT(byte, bit) (byte &= ~BV(bit))
 #define TOGGLE_BIT(byte, bit) (byte ^= BV(bit))
 
+#define _NumItems(array) (sizeof(array)/sizeof(array[0]))
+
 
 #endif /* TYPES_H_ */
