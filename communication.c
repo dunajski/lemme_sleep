@@ -44,7 +44,6 @@ unsigned char GetFromSerial(unsigned char *p_dada)
 {
   if (InputFifo.ri == InputFifo.wi)
     return 0;
-
   else
   {
     *p_dada = InputFifo.buff[InputFifo.ri++];

@@ -8,7 +8,7 @@
 #ifndef RANDOM_H_
 #define RANDOM_H_
 
-#define TurnADCOn ADCSRA|=(1<<ADEN)
+#define TurnADCOn ADCSRA|=(1<<ADEN)|(1<<ADSC)
 #define TurnADCOff ADCSRA&=~(1<<ADEN)
 
 extern unsigned char random_bytes[10];

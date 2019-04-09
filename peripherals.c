@@ -4,6 +4,7 @@
  *  Created on: 17 sty 2019
  *      Author: Dunajski
  */
+
 #include <avr/interrupt.h>
 #include <avr/iom32.h>
 #include <stdint.h>
@@ -16,38 +17,6 @@
 
 #define BAUDRATE 9600L//115200L
 #define BAUD_REG ((F_CPU/(16*BAUDRATE))-1) // freq. divider
-
-struct PortABits
-{
-  volatile unsigned char adc_pin :1;  // PA 0
-  volatile unsigned char action_key :1;  // PA 1
-  volatile unsigned char :3;  // PA 2-4
-  volatile unsigned char motor :1;  // PA 5
-  volatile unsigned char debug_led :1;  // PA 6
-  volatile unsigned char state_led :1;  // PA 7
-};
-
-typedef struct PortABits TPortABits;
-
-#define STATE_LED_VAL ((TPortABits *)&PINA)->state_led
-#define STATE_LED_DIR ((TPortABits *)&DDRA)->state_led
-#define STATE_LED_OUT ((TPortABits *)&PORTA)->state_led
-
-#define DEBUG_LED_VAL ((TPortABits *)&PINA)->debug_led
-#define DEBUG_LED_DIR  ((TPortABits *)&DDRA)->debug_led
-#define DEBUG_LED_OUT ((TPortABits *)&PORTA)->debug_led
-
-#define MOTOR_VAL ((TPortABits *)&PINA)->motor
-#define MOTOR_DIR ((TPortABits *)&DDRA)->motor
-#define MOTOR_OUT ((TPortABits *)&PORTA)->motor
-
-#define ACTION_KEY_VAL ((TPortABits *)&PINA)->action_key
-#define ACTION_KEY_DIR  ((TPortABits *)&DDRA)->action_key
-#define ACTION_KEY_PULLUP ((TPortABits *)&PORTA)->action_key
-
-#define ADC_PIN_VAL ((TPortABits *)&PINA)->adc_pin
-#define ADC_PIN_DIR ((TPortABits *)&DDRA)->adc_pin
-#define ADC_PIN_PULLUP ((TPortABits *)&PORTA)->adc_pin
 
 typedef enum DeviceStates
 {
@@ -75,15 +44,17 @@ void InitTimer0(void)
   TIMSK |= (1 << OCIE0);  //ctc timer0 isr enable
   OCR0 = 155;
 }
+
 void InitTimer2(void)
 {
   OCR2 = 199;  // F_CPU 8Mhz/16MHz przerwanie co 0,4ms/0,2ms
   TCCR2 |= (1 << WGM21 | 1 << CS21);  //CTC pres 8
   TIMSK |= (1 << OCIE2);  //ctc timer2 isr enable
 }
+
 void InitAdc(void)
 {
-  //ADMUX |= (1 << REFS0);  //drfting pin lepiej na AREFie bez niczego
+  ADMUX |= (1 << REFS0);  //drfting pin lepiej na AREFie bez niczego
   ADCSRA |= (1 << ADEN) | (1 << ADSC) | (1 << ADATE) | (1 << ADIE) | (1 << ADPS1) | (1 << ADPS2);
   // ADC ENABLE/start conversion/autotriger EN/interrupt execute EN/ presk 64  f_adc=8MHz/64=125kHz
 }
@@ -127,9 +98,12 @@ ISR(TIMER2_COMP_vect)
         if (ACTION_KEY_VAL == keyr)
         {
           keylev = 2;
-          StrToSerial("ButtonPressed");
+          TurnADCOn;
+          StrToSerial("ADCL:");
+          PutUInt8ToSerial(ADCL);
+          StrToSerial("ADCH:");
+          PutUInt8ToSerial(ADCH);
           StrToSerial("\n");
-          PutToSerial(random_bytes[1]);
         }
       break;
       case 2:

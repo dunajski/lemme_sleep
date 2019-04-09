@@ -19,9 +19,7 @@ int main(void)
   InitTimer2();
   InitIO();
   sei();
-  while (1)
-  {
-  }
+  while (1);
 
   return 0;
 }
