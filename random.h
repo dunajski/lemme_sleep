@@ -11,7 +11,8 @@
 #define TurnADCOn ADCSRA|=(1<<ADEN)|(1<<ADSC)
 #define TurnADCOff ADCSRA&=~(1<<ADEN)
 
-extern unsigned char random_bytes[10];
+volatile unsigned char random_lsb;
+volatile unsigned char change_random;
 
 void PrintRandomBytes(void);
 #endif /* RANDOM_H_ */

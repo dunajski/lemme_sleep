@@ -26,7 +26,21 @@ ISR(TIMER0_COMP_vect)
 //getting random variables
 ISR(ADC_vect)
 {
-  PORTA ^= (1 << PA6);
+//  static uint16_t cnt = 0;
 
-  TurnADCOff;
+  if(change_random)
+  {
+    random_lsb = ADC & 0x01;
+    PutUInt8ToSerial(random_lsb);
+    StrToSerial("\n");
+    change_random = 0;
+  }
+
+//  cnt++;
+//
+//  if (cnt >= 1000)
+//  {
+//    TurnADCOff;
+//    cnt = 0;
+//  }
 }

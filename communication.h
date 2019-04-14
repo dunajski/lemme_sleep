@@ -7,6 +7,7 @@
 
 #ifndef COMMUNICATION_H_
 #define COMMUNICATION_H_
+
 #include <avr/interrupt.h>
 
 extern unsigned char * p_dada;

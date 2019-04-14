@@ -6,6 +6,7 @@
  */
 #include <avr/io.h>
 #include "communication.h"
+#include "random.h"
 
 #define FIFO_LEN 128 //dlugosc kolejek FIFO
 

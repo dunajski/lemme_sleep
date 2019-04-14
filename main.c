@@ -9,6 +9,7 @@
 
 #include "communication.h"
 #include "peripherals.h"
+#include "random.h"
 
 
 int main(void)

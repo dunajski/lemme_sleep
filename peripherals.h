@@ -43,7 +43,6 @@ typedef struct PortABits TPortABits;
 #define DEBUG_LED_ON DEBUG_LED_OUT=1
 #define DEBUG_LED_OFF DEBUG_LED_OUT=0
 
-
 void InitUart(void);
 void InitTimer0(void);
 void InitTimer2(void);

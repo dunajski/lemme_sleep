@@ -12,6 +12,7 @@
 #include "communication.h"
 #include "peripherals.h"
 #include "random.h"
+#include "types.h"
 
 #define FIFO_LEN 128 //dlugosc kolejek FIFO
 
@@ -81,6 +82,30 @@ ISR(TIMER2_COMP_vect)
   static uint16_t keycnt = 0;
   static uint8_t keylev = 0;
   static uint8_t keyr = 0;
+  static uint16_t change_random_cnt = 0;
+  static uint16_t draw_random_cnt = 0;
+
+  // ISR co 0,4ms co tyle, losujemy random lsb
+  // zeby nie "zapchac" kanalu trasnmisyjnego
+  // stad volatile od wysylania bedzie zmieniany tutaj
+  // jeszcze od state bedzie zmieniane, jednakze na razie jest tak
+
+  change_random_cnt++;
+
+  if (change_random_cnt >= 5000) // co 200ms losowanie kolejnej liczby
+  {
+    change_random = 1;
+
+    TOGGLE_BIT(PORTA,PA6);
+    draw_random_cnt++;
+    change_random_cnt = 0;
+  }
+
+  if (draw_random_cnt >= 15)
+  {
+    TurnADCOff;
+  }
+
 
   if (keycnt == 0)
   {
@@ -98,12 +123,9 @@ ISR(TIMER2_COMP_vect)
         if (ACTION_KEY_VAL == keyr)
         {
           keylev = 2;
+          StrToSerial("NEXT:\n");
+          draw_random_cnt = 0;
           TurnADCOn;
-          StrToSerial("ADCL:");
-          PutUInt8ToSerial(ADCL);
-          StrToSerial("ADCH:");
-          PutUInt8ToSerial(ADCH);
-          StrToSerial("\n");
         }
       break;
       case 2:
