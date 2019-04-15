@@ -92,7 +92,7 @@ ISR(TIMER2_COMP_vect)
 
   change_random_cnt++;
 
-  if (change_random_cnt >= 5000) // co 200ms losowanie kolejnej liczby
+  if (change_random_cnt >= 500) // co 200ms losowanie kolejnej liczby
   {
     change_random = 1;
 
@@ -101,7 +101,7 @@ ISR(TIMER2_COMP_vect)
     change_random_cnt = 0;
   }
 
-  if (draw_random_cnt >= 15)
+  if (draw_random_cnt >= 10000)
   {
     TurnADCOff;
   }
