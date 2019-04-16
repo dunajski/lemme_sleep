@@ -8,11 +8,13 @@
 #ifndef RANDOM_H_
 #define RANDOM_H_
 
+#define NUM_RND 100
+
 #define TurnADCOn ADCSRA|=(1<<ADEN)|(1<<ADSC)
 #define TurnADCOff ADCSRA&=~(1<<ADEN)
 
 volatile unsigned char random_lsb;
 volatile unsigned char change_random;
+volatile unsigned char random_values[NUM_RND];
 
-void PrintRandomBytes(void);
 #endif /* RANDOM_H_ */

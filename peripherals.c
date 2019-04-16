@@ -56,7 +56,8 @@ void InitTimer2(void)
 void InitAdc(void)
 {
   ADMUX |= (1 << REFS0);  //drfting pin lepiej na AREFie bez niczego
-  ADCSRA |= (1 << ADEN) | (1 << ADSC) | (1 << ADATE) | (1 << ADIE) | (1 << ADPS1) | (1 << ADPS2);
+//  ADCSRA |= (1 << ADEN) | (1 << ADSC) | (1 << ADATE) | (1 << ADIE) | (1 << ADPS1) | (1 << ADPS2);
+  ADCSRA |= (1 << ADEN) | (1 << ADATE) | (1 << ADIE) | (1 << ADPS1) | (1 << ADPS2);
   // ADC ENABLE/start conversion/autotriger EN/interrupt execute EN/ presk 64  f_adc=8MHz/64=125kHz
 }
 
@@ -83,7 +84,7 @@ ISR(TIMER2_COMP_vect)
   static uint8_t keylev = 0;
   static uint8_t keyr = 0;
   static uint16_t change_random_cnt = 0;
-  static uint16_t draw_random_cnt = 0;
+//  static uint16_t draw_random_cnt = 0;
 
   // ISR co 0,4ms co tyle, losujemy random lsb
   // zeby nie "zapchac" kanalu trasnmisyjnego
@@ -92,20 +93,20 @@ ISR(TIMER2_COMP_vect)
 
   change_random_cnt++;
 
-  if (change_random_cnt >= 500) // co 200ms losowanie kolejnej liczby
+  if (change_random_cnt >= 100) // co 200ms losowanie kolejnej liczby
   {
     change_random = 1;
 
     TOGGLE_BIT(PORTA,PA6);
-    draw_random_cnt++;
+//    draw_random_cnt++;
     change_random_cnt = 0;
   }
 
-  if (draw_random_cnt >= 10000)
-  {
-    TurnADCOff;
-  }
-
+//  if (draw_random_cnt >= 10000)
+//  {
+//    TurnADCOff;
+//  }
+//
 
   if (keycnt == 0)
   {
@@ -123,8 +124,8 @@ ISR(TIMER2_COMP_vect)
         if (ACTION_KEY_VAL == keyr)
         {
           keylev = 2;
-          StrToSerial("NEXT:\n");
-          draw_random_cnt = 0;
+          StrToSerial("Probki:\n");
+//          draw_random_cnt = 0;
           TurnADCOn;
         }
       break;

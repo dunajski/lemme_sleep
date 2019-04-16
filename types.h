@@ -15,5 +15,4 @@
 
 #define _NumItems(array) (sizeof(array)/sizeof(array[0]))
 
-
 #endif /* TYPES_H_ */

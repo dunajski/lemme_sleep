@@ -5,6 +5,7 @@
  *      Author: Dunajski
  */
 #include <avr/io.h>
+#include "types.h"
 #include "communication.h"
 #include "random.h"
 
@@ -41,7 +42,7 @@ ISR(USART_RXC_vect) /*VECTOR(11), USART, RxComplete*/
 
 // zwraca: 0 -gdy bufor odbiornika pusty
 // 1 -gdy pobrany znak umieszczony w '*p_dada'
-unsigned char GetFromSerial(unsigned char *p_dada)
+unsigned char GetFromSerial(unsigned char * p_dada)
 {
   if (InputFifo.ri == InputFifo.wi)
     return 0;
