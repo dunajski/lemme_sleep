@@ -19,14 +19,6 @@
 #define BAUDRATE 9600L//115200L
 #define BAUD_REG ((F_CPU/(16*BAUDRATE))-1) // freq. divider
 
-typedef enum DeviceStates
-{
-  POWER_SAFE,
-  LOSOWANIE,
-  NADAWANIE,
-  INTERAKCJA,
-} TDeviceState;
-
 void InitUart(void)
 {
   UBRRH = (BAUD_REG >> 8);
@@ -73,6 +65,8 @@ void InitIO(void)
 
   ADC_PIN_DIR = 0; // wejscie
   ADC_PIN_PULLUP = 0; // bez pullupu, niech dryfuje
+
+  device_state = ST_LOSOWANIE; // na razie rozpocznij od razu od losowania
 }
 
 // isr to debounce key and measure feedback
@@ -84,6 +78,7 @@ ISR(TIMER2_COMP_vect)
   static uint8_t keylev = 0;
   static uint8_t keyr = 0;
   static uint16_t change_random_cnt = 0;
+  static unsigned char * hnr_time_ptr = holdandreleasetime;
 //  static uint16_t draw_random_cnt = 0;
 
   // ISR co 0,4ms co tyle, losujemy random lsb
@@ -108,6 +103,8 @@ ISR(TIMER2_COMP_vect)
 //  }
 //
 
+  // obsluga klawisza, jedynego pewnie wiec nalezy uzaleznic od
+  // stanu urzadzenia (TDeviceStates)
   if (keycnt == 0)
   {
     switch (keylev)
@@ -123,10 +120,38 @@ ISR(TIMER2_COMP_vect)
       case 1: // pressed,debounced
         if (ACTION_KEY_VAL == keyr)
         {
-          keylev = 2;
-          StrToSerial("Probki:\n");
-//          draw_random_cnt = 0;
-          TurnADCOn;
+          if (device_state != ST_INTERAKCJA)
+            keylev = 2;
+
+          switch (device_state)
+          {
+            case ST_IDLE:
+              // nalezaloby jaks rozbudzic, finalnie moze sie okazac, ze lepiej
+              // zeby klawiszem ktorym sterujemy byl inny niz ten na PortA,a tam gdzie EXT0/1
+            break;
+            case ST_WIBROWANIE:
+              // sterowanie silnikiem ze wzgledu na wylosowane wartosci
+              // obsluga klawisza do dyskusji bo uzytkownik powininen
+              // starac sie zapamietac losowa wibracje
+            break;
+            case ST_INTERAKCJA:
+              // obsluga, zapisu interakcji najitotniejsze czyli mierzenie odpowiedzi uzytkownika
+              // nastepnym stanem tj. po uplynieciu maksymalnego czasu oczekiwania na odopowiedz
+              // powinien byc stan podjecia decyzji o tym jak ma wygladac kolejne nadawanie
+              // po debounce dodaj wartosc debounce az do puszczenia przycisku
+              // debounce po puszczeniu
+              if (ACTION_KEY_VAL == 1)
+                hnr_time_ptr += SaveHoldOrReleaseTime(hnr_time_ptr, 100);
+            break;
+            case ST_OCENA:
+            case ST_LOSOWANIE:
+            default:
+              // do nothing
+            break;
+          }
+        // StrToSerial("Probki:\n");
+        // draw_random_cnt = 0;
+        // TurnADCOn;
         }
       break;
       case 2:
@@ -138,5 +163,7 @@ ISR(TIMER2_COMP_vect)
 
   if (keycnt > 0)
     keycnt--;
+
+
 }
 

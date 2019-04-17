@@ -15,4 +15,13 @@
 
 #define _NumItems(array) (sizeof(array)/sizeof(array[0]))
 
+typedef enum DeviceState
+{
+  ST_IDLE = 0,
+  ST_LOSOWANIE,   // tuz przed nadawaniem krotki okres przeznacozny na wylosowanie
+  ST_WIBROWANIE,
+  ST_INTERAKCJA,  // rejestrowanie odpowiedzi uzytkownika
+  ST_OCENA        // ocena "jakosci" odzworowania sygnalu losowego
+} TDeviceStates;
+
 #endif /* TYPES_H_ */

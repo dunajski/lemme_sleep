@@ -28,6 +28,8 @@ ISR(ADC_vect)
 //    PutUInt8ToSerial(random_lsb);
 //    StrToSerial("\n");
     random_values[rnd_idx] = random_lsb;
+    PutUInt8ToSerial(rnd_idx + 1);
+    StrToSerial(":");
     PutUInt8ToSerial(random_values[rnd_idx]);
     StrToSerial("\n");
     rnd_idx++;
@@ -39,4 +41,12 @@ ISR(ADC_vect)
     rnd_idx = 0;
     TurnADCOff;
   }
+}
+
+uint8_t SaveHoldOrReleaseTime(unsigned char * hnr_array, uint8_t add_val)
+{
+  *hnr_array += add_val;
+  // zwraca 1 zeby przesunac wskaznik, potem mozna dac ** i przesuwac wewnatrz
+  // lub po prostu przesuwac za kazdym wywolaniem w kodzie, na razie tak
+  return 1;
 }
