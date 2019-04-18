@@ -11,7 +11,6 @@
 #include "peripherals.h"
 #include "random.h"
 
-
 int main(void)
 {
   InitUart();

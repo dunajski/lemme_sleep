@@ -43,9 +43,9 @@ ISR(ADC_vect)
   }
 }
 
-uint8_t SaveHoldOrReleaseTime(unsigned char * hnr_array, uint8_t add_val)
+uint8_t SaveButtonStateTime(uint16_t * hnr_array, uint16_t time)
 {
-  *hnr_array += add_val;
+  *hnr_array += time;
   // zwraca 1 zeby przesunac wskaznik, potem mozna dac ** i przesuwac wewnatrz
   // lub po prostu przesuwac za kazdym wywolaniem w kodzie, na razie tak
   return 1;

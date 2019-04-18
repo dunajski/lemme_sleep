@@ -23,6 +23,6 @@ volatile unsigned char device_state;
 // nalezy dodac debounce dla release i obsluge dodawania wartosci holda
 unsigned char holdandreleasetime[NUM_ACTIONS];
 
-uint8_t SaveHoldOrReleaseTime(unsigned char * hnr_array, uint8_t add_val);
+uint8_t SaveButtonStateTime(uint16_t * hnr_array, uint16_t time);
 
 #endif /* RANDOM_H_ */

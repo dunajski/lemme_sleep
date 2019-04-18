@@ -14,6 +14,11 @@
 #include "random.h"
 #include "types.h"
 
+#define ISR_DEBOUNCE_CNT 200
+
+#define BUTTON_NOT_PRESSED 0  // przycisk niewcisniety podczas stanu INTERAKCJA
+#define BUTTON_PRESSED 1      // przycisk wcisniety podczas stanu INTERAKCJA
+
 #define FIFO_LEN 128 //dlugosc kolejek FIFO
 
 #define BAUDRATE 9600L//115200L
@@ -79,6 +84,8 @@ ISR(TIMER2_COMP_vect)
   static uint8_t keyr = 0;
   static uint16_t change_random_cnt = 0;
   static unsigned char * hnr_time_ptr = holdandreleasetime;
+  static uint16_t button_state_time = 0; // powinnien 16 bitowy wystarczyc 0,4 ms x 0xFFFF = ~26 s
+  static uint8_t substate_interakcja = 0;
 //  static uint16_t draw_random_cnt = 0;
 
   // ISR co 0,4ms co tyle, losujemy random lsb
@@ -114,7 +121,7 @@ ISR(TIMER2_COMP_vect)
         {
           keyr = ACTION_KEY_VAL;
           keylev = 1;
-          keycnt = 200;
+          keycnt = ISR_DEBOUNCE_CNT;
         }
       break;
       case 1: // pressed,debounced
@@ -122,6 +129,8 @@ ISR(TIMER2_COMP_vect)
         {
           if (device_state != ST_INTERAKCJA)
             keylev = 2;
+          else
+
 
           switch (device_state)
           {
@@ -140,8 +149,16 @@ ISR(TIMER2_COMP_vect)
               // powinien byc stan podjecia decyzji o tym jak ma wygladac kolejne nadawanie
               // po debounce dodaj wartosc debounce az do puszczenia przycisku
               // debounce po puszczeniu
-              if (ACTION_KEY_VAL == 1)
-                hnr_time_ptr += SaveHoldOrReleaseTime(hnr_time_ptr, 100);
+
+              // jesli wciaz wcisniety i interakcja to dodawaj button state, tak
+              // dlugo az uzytkownik pusci dzwignie/przycisk
+              if (ACTION_KEY_VAL == 1 )
+              {
+                button_state_time++;
+//                hnr_time_ptr += SaveButtonStateTime(hnr_time_ptr, 100);
+              }
+              // jesli uzytkownik puscil przycisk to przestan naliczac button_state_time i zacznij
+              // debounce dla puszczenia przycisku
             break;
             case ST_OCENA:
             case ST_LOSOWANIE:
