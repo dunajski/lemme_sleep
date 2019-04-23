@@ -24,6 +24,30 @@ void PutUInt8ToSerial(uint8_t integer)
   PutToSerial(integer % 10 + '0');
 }
 
+void PutUint16ToSerial(uint16_t  two_bytes)
+{
+  char bytes[2] = {0, 0};
+
+  bytes[0] = two_bytes & 0x00FF;
+  bytes[1] = two_bytes & 0xFF00;
+
+  if (bytes[1] >= 100)
+    PutToSerial((((bytes[1] % 1000) - (bytes[1] % 100)) / 100 + '0'));  // setki
+  if (bytes[1] >= 10)
+    PutToSerial((((bytes[1] % 100) - (bytes[1] % 10)) / 10) + '0');  // dziesiatki
+  PutToSerial(bytes[1] % 10 + '0');
+
+  StrToSerial(":");
+
+  if (bytes[0] >= 100)
+    PutToSerial((((bytes[0] % 1000) - (bytes[0] % 100)) / 100 + '0'));  // setki
+  if (bytes[0] >= 10)
+    PutToSerial((((bytes[0] % 100) - (bytes[0] % 10)) / 10) + '0');  // dziesiatki
+  PutToSerial(bytes[0] % 10 + '0');
+  StrToSerial("\n");
+
+}
+
 struct
 {
   unsigned char wi;  //indeks odczytu

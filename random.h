@@ -18,9 +18,11 @@ volatile unsigned char random_lsb;
 volatile unsigned char change_random;
 volatile unsigned char random_values[NUM_RND];
 volatile unsigned char device_state;
+
 // w tej tablicy musza sie znalezc wartosci interakcji dla poszczegolnych faz odbierania
 // tj. dla puszczenia (przerwy) oraz przytrzymania klawisza, zapisywanie gdy ST_INTERAKCJA
 // nalezy dodac debounce dla release i obsluge dodawania wartosci holda
+// 3 holdy 2 releasy
 unsigned char holdandreleasetime[NUM_ACTIONS];
 
 uint8_t SaveButtonStateTime(uint16_t * hnr_array, uint16_t time);

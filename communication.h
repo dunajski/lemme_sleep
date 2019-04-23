@@ -13,6 +13,7 @@
 extern unsigned char * p_dada;
 
 void PutUInt8ToSerial(uint8_t integer);
+void PutUint16ToSerial(uint16_t  two_bytes);
 void PutToSerial(unsigned char data);
 unsigned char GetFromSerial(unsigned char *p_dada);
 void StrToSerial(char *msg);

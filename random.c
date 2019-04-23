@@ -11,10 +11,38 @@
 #include "peripherals.h"
 #include "communication.h"
 
-//ISR to turn on motor
+//ISR to turn on motor  co 10ms
 ISR(TIMER0_COMP_vect)
 {
+  static uint16_t hnr_cnt = 0;
+  static uint8_t index_hnr = 0;
 
+  // rozne czasyd obu isr, jednakze sprawdzam dla debugu
+  if (device_state == ST_OCENA)
+  {
+    if(hnr_cnt == 0)
+    {
+      hnr_cnt = holdandreleasetime[index_hnr];
+      index_hnr++;
+    }
+
+    if (index_hnr == 0 || index_hnr == 2 || index_hnr == 4)
+      DEBUG_LED_ON;
+    else
+      DEBUG_LED_OFF;
+  }
+
+
+  if (hnr_cnt > 0)
+  {
+    hnr_cnt--;
+  }
+
+  if (index_hnr > 4)
+  {
+    index_hnr = 0;
+    device_state = ST_INTERAKCJA;
+  }
 }
 
 //getting random variables
