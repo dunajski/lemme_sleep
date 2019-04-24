@@ -26,8 +26,6 @@ typedef enum KeySubState
   BUTTON_IS_RELEASED // stan do naliczania czasu po debounce po zwolnieniu przycisku
 
 } TKeySubstates;
-#define BUTTON_NOT_PRESSED 0  // przycisk niewcisniety podczas stanu INTERAKCJA
-#define BUTTON_PRESSED 1      // przycisk wcisniety podczas stanu INTERAKCJA
 
 #define FIFO_LEN 128 //dlugosc kolejek FIFO
 
@@ -82,6 +80,17 @@ void InitIO(void)
   ADC_PIN_PULLUP = 0; // bez pullupu, niech dryfuje
 
   device_state = ST_INTERAKCJA; // na razie rozpocznij od razu od losowania
+
+  PutUint16ToSerial(0xFF98);
+  StrToSerial("\n");
+  PutUint16ToSerial(0x0001);
+  StrToSerial("\n");
+  PutUint16ToSerial(0x02);
+  StrToSerial("\n");
+  PutUint16ToSerial(0x0F0F);
+  StrToSerial("\n");
+  PutUint16ToSerial(0x0FFF);
+  StrToSerial("\n");
 }
 
 // isr to debounce key and measure feedback
@@ -111,7 +120,7 @@ ISR(TIMER2_COMP_vect)
   {
     change_random = 1;
 
-    if (device_state!= ST_OCENA)
+    if (device_state != ST_OCENA)
     {
       TOGGLE_BIT(PORTA,PA6);
     }

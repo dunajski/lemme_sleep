@@ -5,6 +5,7 @@
  *      Author: Dunajski
  */
 #include <avr/io.h>
+#include <string.h>
 #include "types.h"
 #include "communication.h"
 #include "random.h"
@@ -13,6 +14,8 @@
 
 #define BAUDRATE 9600L//115200L
 #define BAUD_REG ((F_CPU/(16*BAUDRATE))-1) //dzielnika cz. UBRR
+
+#define _UINT16_MAX_ASCII_DIGITS 5 // maks 65 535
 
 void PutUInt8ToSerial(uint8_t integer)
 {
@@ -24,28 +27,34 @@ void PutUInt8ToSerial(uint8_t integer)
   PutToSerial(integer % 10 + '0');
 }
 
-void PutUint16ToSerial(uint16_t  two_bytes)
+void PutUint16ToSerial(uint16_t value)
 {
-  char bytes[2] = {0, 0};
+  uint8_t how_many_digits = 0;
+  uint8_t ascii[_UINT16_MAX_ASCII_DIGITS];
 
-  bytes[0] = two_bytes & 0x00FF;
-  bytes[1] = two_bytes & 0xFF00;
+  how_many_digits = ConversionUInt16ToAscii(value, ascii);
 
-  if (bytes[1] >= 100)
-    PutToSerial((((bytes[1] % 1000) - (bytes[1] % 100)) / 100 + '0'));  // setki
-  if (bytes[1] >= 10)
-    PutToSerial((((bytes[1] % 100) - (bytes[1] % 10)) / 10) + '0');  // dziesiatki
-  PutToSerial(bytes[1] % 10 + '0');
+  for (int i = 0; i < how_many_digits; i++)
+  {
+    PutToSerial(ascii[i]);
+  }
+}
 
-  StrToSerial(":");
+uint8_t ConversionUInt16ToAscii(uint16_t value, unsigned char * buffer)
+{
+  uint8_t length = 0;
+  uint8_t ascii[_UINT16_MAX_ASCII_DIGITS];
 
-  if (bytes[0] >= 100)
-    PutToSerial((((bytes[0] % 1000) - (bytes[0] % 100)) / 100 + '0'));  // setki
-  if (bytes[0] >= 10)
-    PutToSerial((((bytes[0] % 100) - (bytes[0] % 10)) / 10) + '0');  // dziesiatki
-  PutToSerial(bytes[0] % 10 + '0');
-  StrToSerial("\n");
+  do
+  {
+    ascii[_UINT16_MAX_ASCII_DIGITS - 1 - length] = (value % 10) + '0';
+    value /= 10;
+    length++;
+  } while (value > 0);
 
+  memcpy(buffer, &ascii[_UINT16_MAX_ASCII_DIGITS - length], length);
+
+  return length;
 }
 
 struct
