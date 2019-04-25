@@ -24,4 +24,8 @@ typedef enum DeviceState
   ST_OCENA        // ocena "jakosci" odzworowania sygnalu losowego
 } TDeviceStates;
 
+typedef unsigned char uchar;
+typedef uint16_t uint16;
+typedef uint8_t uint8;
+
 #endif /* TYPES_H_ */

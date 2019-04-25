@@ -8,13 +8,11 @@
 #include <avr/interrupt.h>
 #include <avr/iom32.h>
 #include <stdint.h>
-
-#include "communication.h"
 #include "peripherals.h"
-#include "random.h"
-#include "types.h"
 
 #define ISR_DEBOUNCE_CNT 200
+
+volatile uint16 * hnr_time_ptr = holdandreleasetime;
 
 // stany przycisku podczas odliczania czasu wcisnieta i puszczenia dla stanu ST_INTERAKCJA
 typedef enum KeySubState
@@ -98,16 +96,15 @@ void InitIO(void)
 // keycnt 200 then 0,4 * 200 = 80ms
 ISR(TIMER2_COMP_vect)
 {
-  static uint16_t keycnt = 0, keycnt2 = 0;
-  static uint8_t keylev = 0;
-  static uint8_t keyr = 0;
-  static uint16_t change_random_cnt = 0;
-  static unsigned char * hnr_time_ptr = holdandreleasetime;
-  static uint16_t button_state_time = 0; // powinnien 16 bitowy wystarczyc 0,4 ms x 0xFFFF = ~26 s
-  static uint8_t key_state_interakcja = INITIAL_KEY_STATE;
+  static uint16 keycnt = 0, keycnt2 = 0;
+  static uint8 keylev = 0;
+  static uint8 keyr = 0;
+  static uint16 change_random_cnt = 0;
+  static uint16 button_state_time = 0; // powinnien 16 bitowy wystarczyc 0,4 ms x 0xFFFF = ~26 s
+  static uint8 key_state_interakcja = INITIAL_KEY_STATE;
   // pomocznia zmienna pewnie potem do wyciecia, zeby przechowywac ilosc zmian stanu
-  static uint8_t saved_states = 0;
-//  static uint16_t draw_random_cnt = 0;
+  static uint8 saved_states = 0;
+//  static uint16 draw_random_cnt = 0;
 
   // ISR co 0,4ms co tyle, losujemy random lsb
   // zeby nie "zapchac" kanalu trasnmisyjnego
@@ -210,10 +207,7 @@ ISR(TIMER2_COMP_vect)
     {
       device_state = ST_OCENA;
       key_state_interakcja = INITIAL_KEY_STATE;
-//      for (int i = 0; i <= 4; i++)
-//      {
-//        PutUint16ToSerial(holdandreleasetime[i]);
-//      }
+      saved_states = 0;
     }
 
     // jesli wcisniety to przycisk zwierany do GND czyli logiczne '0'

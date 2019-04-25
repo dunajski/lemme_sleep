@@ -7,9 +7,6 @@
 
 #include <avr/interrupt.h>
 #include "random.h"
-#include "types.h"
-#include "peripherals.h"
-#include "communication.h"
 
 //ISR to turn on motor  co 10ms
 ISR(TIMER0_COMP_vect)
@@ -20,16 +17,17 @@ ISR(TIMER0_COMP_vect)
   // rozne czasyd obu isr, jednakze sprawdzam dla debugu
   if (device_state == ST_OCENA)
   {
+    if (index_hnr == 0 || index_hnr == 2 || index_hnr == 4)
+      DEBUG_LED_ON;
+    else
+      DEBUG_LED_OFF;
+
     if(hnr_cnt == 0)
     {
       hnr_cnt = holdandreleasetime[index_hnr];
       index_hnr++;
     }
 
-    if (index_hnr == 0 || index_hnr == 2 || index_hnr == 4)
-      DEBUG_LED_ON;
-    else
-      DEBUG_LED_OFF;
   }
 
 

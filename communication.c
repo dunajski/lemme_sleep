@@ -6,9 +6,7 @@
  */
 #include <avr/io.h>
 #include <string.h>
-#include "types.h"
 #include "communication.h"
-#include "random.h"
 
 #define FIFO_LEN 128 //dlugosc kolejek FIFO
 
@@ -17,7 +15,9 @@
 
 #define _UINT16_MAX_ASCII_DIGITS 5 // maks 65 535
 
-void PutUInt8ToSerial(uint8_t integer)
+static uint8 ConversionUInt16ToAscii(uint16 value, uchar * buffer);
+
+void PutUInt8ToSerial(uint8 integer)
 {
   if (integer >= 100)
     PutToSerial((((integer % 1000) - (integer % 100)) / 100 + '0'));  // setki
@@ -27,10 +27,10 @@ void PutUInt8ToSerial(uint8_t integer)
   PutToSerial(integer % 10 + '0');
 }
 
-void PutUint16ToSerial(uint16_t value)
+void PutUint16ToSerial(uint16 value)
 {
-  uint8_t how_many_digits = 0;
-  uint8_t ascii[_UINT16_MAX_ASCII_DIGITS];
+  uint8 how_many_digits = 0;
+  uint8 ascii[_UINT16_MAX_ASCII_DIGITS];
 
   how_many_digits = ConversionUInt16ToAscii(value, ascii);
 
@@ -40,10 +40,10 @@ void PutUint16ToSerial(uint16_t value)
   }
 }
 
-uint8_t ConversionUInt16ToAscii(uint16_t value, unsigned char * buffer)
+static uint8 ConversionUInt16ToAscii(uint16 value, uchar * buffer)
 {
-  uint8_t length = 0;
-  uint8_t ascii[_UINT16_MAX_ASCII_DIGITS];
+  uint8 length = 0;
+  uint8 ascii[_UINT16_MAX_ASCII_DIGITS];
 
   do
   {
@@ -59,8 +59,8 @@ uint8_t ConversionUInt16ToAscii(uint16_t value, unsigned char * buffer)
 
 struct
 {
-  unsigned char wi;  //indeks odczytu
-  unsigned char ri;  //indeks zapisu
+  uchar wi;  //indeks odczytu
+  uchar ri;  //indeks zapisu
   char buff[FIFO_LEN];
 }
 InputFifo = {0, 0},
@@ -75,7 +75,7 @@ ISR(USART_RXC_vect) /*VECTOR(11), USART, RxComplete*/
 
 // zwraca: 0 -gdy bufor odbiornika pusty
 // 1 -gdy pobrany znak umieszczony w '*p_dada'
-unsigned char GetFromSerial(unsigned char * p_dada)
+uchar GetFromSerial(uchar * p_dada)
 {
   if (InputFifo.ri == InputFifo.wi)
     return 0;
@@ -102,7 +102,7 @@ ISR(USART_UDRE_vect) /*VECTOR(12), USART Data Register Empty*/
   }
 }
 
-void PutToSerial(unsigned char data)
+void PutToSerial(uchar data)
 {
   OutputFifo.buff[OutputFifo.wi++] = data;
 
