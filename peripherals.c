@@ -11,8 +11,11 @@
 #include "peripherals.h"
 
 #define ISR_DEBOUNCE_CNT 200
+#define TRUE (1)
+#define FALSE (0)
 
 volatile uint16 * hnr_time_ptr = holdandreleasetime;
+volatile uchar how_many_times_sent = 0;
 
 // stany przycisku podczas odliczania czasu wcisnieta i puszczenia dla stanu ST_INTERAKCJA
 typedef enum KeySubState
@@ -79,21 +82,22 @@ void InitIO(void)
 
   device_state = ST_INTERAKCJA; // na razie rozpocznij od razu od losowania
 
-  PutUint16ToSerial(0xFF98);
-  StrToSerial("\n");
-  PutUint16ToSerial(0x0001);
-  StrToSerial("\n");
-  PutUint16ToSerial(0x02);
-  StrToSerial("\n");
-  PutUint16ToSerial(0x0F0F);
-  StrToSerial("\n");
-  PutUint16ToSerial(0x0FFF);
-  StrToSerial("\n");
+//  PutUint16ToSerial(0xFF98);
+//  StrToSerial("\n");
+//  PutUint16ToSerial(0x0001);
+//  StrToSerial("\n");
+//  PutUint16ToSerial(0x02);
+//  StrToSerial("\n");
+//  PutUint16ToSerial(0x0F0F);
+//  StrToSerial("\n");
+//  PutUint16ToSerial(0x0FFF);
+//  StrToSerial("\n");
 }
 
 // isr to debounce key and measure feedback
 //ISR 0,4ms
 // keycnt 200 then 0,4 * 200 = 80ms
+// 0,2ms?
 ISR(TIMER2_COMP_vect)
 {
   static uint16 keycnt = 0, keycnt2 = 0;
@@ -104,8 +108,7 @@ ISR(TIMER2_COMP_vect)
   static uint8 key_state_interakcja = INITIAL_KEY_STATE;
   // pomocznia zmienna pewnie potem do wyciecia, zeby przechowywac ilosc zmian stanu
   static uint8 saved_states = 0;
-//  static uint16 draw_random_cnt = 0;
-
+  static int m = 0;
   // ISR co 0,4ms co tyle, losujemy random lsb
   // zeby nie "zapchac" kanalu trasnmisyjnego
   // stad volatile od wysylania bedzie zmieniany tutaj
@@ -113,7 +116,7 @@ ISR(TIMER2_COMP_vect)
 
   change_random_cnt++;
 
-  if (change_random_cnt >= 100) // co 200ms losowanie kolejnej liczby
+  if (change_random_cnt >= 25000) // co 200ms losowanie kolejnej liczby
   {
     change_random = 1;
 
@@ -185,10 +188,10 @@ ISR(TIMER2_COMP_vect)
               // do nothing
             break;
           }
-        // StrToSerial("Probki:\n");
-        // draw_random_cnt = 0;
-        // TurnADCOn;
         }
+        // jesli stan sie rozni
+        else
+          keylev = 0;
       break;
       case 2:
         if (ACTION_KEY_VAL == 1)
@@ -200,73 +203,136 @@ ISR(TIMER2_COMP_vect)
   if (keycnt > 0)
     keycnt--;
 
+
   if (device_state == ST_INTERAKCJA)
   {
-    // jesli zapisano piec stanow 3H i 2R to zakoncz i przejdz do oceny
-    if (saved_states >= 5)
-    {
-      device_state = ST_OCENA;
-      key_state_interakcja = INITIAL_KEY_STATE;
-      saved_states = 0;
-    }
 
-    // jesli wcisniety to przycisk zwierany do GND czyli logiczne '0'
-    // musi byc stan initial
-    if ((key_state_interakcja == INITIAL_KEY_STATE) && !(ACTION_KEY_VAL))
+    if (!keycnt2 && (saved_states < NUM_ACTIONS))
     {
-      keycnt2 = ISR_DEBOUNCE_CNT;
-      key_state_interakcja = BUTTON_PRESSED;
-    }
 
-    // jesli przycisk nie wcisniety oraz key_state nie wcisniety i czas debounce 0  to dodawaj
-    // czas release, tak bedzie sie dzialo od razu po przejsciu w stan w device state, jednakze
-    // zapis odbywa sie dopiero po pierwszym wcisnieciu "holdzie" przycisku
-    if ((key_state_interakcja == BUTTON_NOT_PRESSED) && (ACTION_KEY_VAL) && (keycnt2 == 0))
-    {
-      button_state_time = ISR_DEBOUNCE_CNT;  // dodanie czasu debounce'a od teraz mozna liczyc dalej
-      key_state_interakcja = BUTTON_IS_RELEASED;
-    }
-
-    // przycisk zotal puszczony zliczaj czas przerwy i zapisz do tablicy po pojawieniu sie stanu
-    // wcisniecia przycisku ponownie
-    if (key_state_interakcja == BUTTON_IS_RELEASED)
-    {
-      button_state_time++;
-
-      // jesli wcisnieto podczas zwolnionego przycisku, czyli liczymy kolejny stan wcisniecia
-      if (!ACTION_KEY_VAL)
+      // aby rozpoczac mierzenie hold and release musi byc stan init, zeby mozna bylo rozpoczac
+      // mierzenie od wcisniecia, a wiec oczekuje na wcisniecie przycisku
+      if ((key_state_interakcja == INITIAL_KEY_STATE) && !(ACTION_KEY_VAL))
       {
-        *hnr_time_ptr++ = button_state_time;
-        button_state_time = 0;
-        saved_states++;
+        // debouncing wcisnieto przycisk
         keycnt2 = ISR_DEBOUNCE_CNT;
         key_state_interakcja = BUTTON_PRESSED;
       }
-    }
 
-    // jesli przycisk jest wcisniety oraz podstan interakcji to wcisniety przycisk i stan interakcja
-    if ((key_state_interakcja == BUTTON_PRESSED) && (!(ACTION_KEY_VAL)) && (keycnt2 == 0))
-    {
-      button_state_time = ISR_DEBOUNCE_CNT;  // dodanie czasu debounce'a od teraz mozna liczyc dalej
-      key_state_interakcja = BUTTON_IS_HOLDED;
-    }
-
-    // jesli stan, ze przycisk wcisniety oraz wciaz jest wciskany dodawaj co przerwanie czas
-    if (key_state_interakcja == BUTTON_IS_HOLDED)
-    {
-      button_state_time++;
-
-      // jesli stan wcisniecia przycisku oraz przycisk zostal zwolniony, czas na debounce release'a przycisku
-      // zapisz czas wcisniecia, wyzeruj licznik i przejdz do liczenia zwolnienia przycisku
-      if (ACTION_KEY_VAL)
+      // sprawdzamy czy po debounce przycisk wciaz jest przycisniety
+      if (key_state_interakcja == BUTTON_PRESSED)
       {
-        *hnr_time_ptr++ = button_state_time;
-        button_state_time = 0;
-        saved_states++;
-        keycnt2 = ISR_DEBOUNCE_CNT;
-        key_state_interakcja = BUTTON_NOT_PRESSED;
+        if (!(ACTION_KEY_VAL))
+        {
+          button_state_time = ISR_DEBOUNCE_CNT;  // dodanie czasu debounce'a od teraz mozna liczyc dalej
+          key_state_interakcja = BUTTON_IS_HOLDED;
+        }
+        // jesli po tym czasie przycisk jest zwolniony to uzytkownik byl w stanie tak szybko kliknac
+        // jednakze to oznacza ze nastepuje kolejn stan tj. debounce od releasa i zapisujemy po prostu
+        // czas debounca, troche zaklamanie ale bardzo znikle
+        else
+        {
+          *hnr_time_ptr++ = ISR_DEBOUNCE_CNT;
+          button_state_time = 0;
+          saved_states++;
+          keycnt2 = ISR_DEBOUNCE_CNT;
+          key_state_interakcja = BUTTON_NOT_PRESSED;
+        }
+      }
+
+      // jesli stan, ze przycisk wcisniety oraz wciaz jest wciskany dodawaj co przerwanie czas
+      if (key_state_interakcja == BUTTON_IS_HOLDED)
+      {
+        button_state_time++;
+
+        // jesli stan wcisniecia przycisku oraz przycisk zostal zwolniony, czas na debounce release'a przycisku
+        // zapisz czas wcisniecia, wyzeruj licznik i przejdz do liczenia zwolnienia przycisku
+        if (ACTION_KEY_VAL)
+        {
+          *hnr_time_ptr++ = button_state_time;
+          button_state_time = 0;
+          saved_states++;
+          keycnt2 = ISR_DEBOUNCE_CNT;
+          key_state_interakcja = BUTTON_NOT_PRESSED;
+        }
+      }
+
+      // jesli przycisk nie wcisniety oraz key_state nie wcisniety i czas debounce 0  to dodawaj
+      // czas release, tak bedzie sie dzialo od razu po przejsciu w stan w device state, jednakze
+      // zapis odbywa sie dopiero po pierwszym wcisnieciu "holdzie" przycisku
+      if (key_state_interakcja == BUTTON_NOT_PRESSED)
+      {
+        if (ACTION_KEY_VAL)
+        {
+          button_state_time = ISR_DEBOUNCE_CNT;  // dodanie czasu debounce'a od teraz mozna liczyc dalej
+          key_state_interakcja = BUTTON_IS_RELEASED;
+        }
+        else
+        {
+          *hnr_time_ptr++ = ISR_DEBOUNCE_CNT;
+          button_state_time = 0;
+          saved_states++;
+          keycnt2 = ISR_DEBOUNCE_CNT;
+          key_state_interakcja = BUTTON_PRESSED;
+        }
+      }
+      // przycisk zotal puszczony zliczaj czas przerwy i zapisz do tablicy po pojawieniu sie stanu
+      // wcisniecia przycisku ponownie
+      if (key_state_interakcja == BUTTON_IS_RELEASED)
+      {
+        button_state_time++;
+
+        // jesli wcisnieto podczas zwolnionego przycisku, czyli liczymy kolejny stan wcisniecia
+        if (!ACTION_KEY_VAL)
+        {
+          *hnr_time_ptr++ = button_state_time;
+          button_state_time = 0;
+          saved_states++;
+          keycnt2 = ISR_DEBOUNCE_CNT;
+          key_state_interakcja = BUTTON_PRESSED;
+        }
       }
     }
+
+
+    // jesli zapisano piec stanow 3H i 2R to zakoncz i przejdz do oceny
+    if (saved_states >= NUM_ACTIONS)
+    {
+
+      if(m == 0)
+      {
+        button_state_time = 0;
+        keycnt2 = 10000;  // przerwa 2 s
+//        hnr_time_ptr = holdandreleasetime;
+        hnr_time_ptr -= NUM_ACTIONS;
+        //StrToSerial("Losowanie nr:");
+        how_many_times_sent++;
+        PutUInt8ToSerial(how_many_times_sent);
+        StrToSerial("\n");
+      }
+
+      if (!(m % 2))
+        StrToSerial("H");
+      else
+        StrToSerial("R");
+
+      PutUInt8ToSerial(m);
+      StrToSerial(": ");
+
+      PutUint16ToSerial(*hnr_time_ptr / 5, TRUE, 4);
+      *hnr_time_ptr = 0;
+      StrToSerial(" ms\n");
+      hnr_time_ptr++;
+      m++;
+    }
+  }
+
+  if(m >= NUM_ACTIONS)
+  {
+    key_state_interakcja = INITIAL_KEY_STATE;
+    saved_states = 0;
+    m = 0;
+    hnr_time_ptr -= NUM_ACTIONS;
   }
 
   if (keycnt2 > 0)

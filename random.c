@@ -11,36 +11,48 @@
 //ISR to turn on motor  co 10ms
 ISR(TIMER0_COMP_vect)
 {
-  static uint16_t hnr_cnt = 0;
-  static uint8_t index_hnr = 0;
-
-  // rozne czasyd obu isr, jednakze sprawdzam dla debugu
-  if (device_state == ST_OCENA)
-  {
-    if (index_hnr == 0 || index_hnr == 2 || index_hnr == 4)
-      DEBUG_LED_ON;
-    else
-      DEBUG_LED_OFF;
-
-    if(hnr_cnt == 0)
-    {
-      hnr_cnt = holdandreleasetime[index_hnr];
-      index_hnr++;
-    }
-
-  }
-
-
-  if (hnr_cnt > 0)
-  {
-    hnr_cnt--;
-  }
-
-  if (index_hnr > 4)
-  {
-    index_hnr = 0;
-    device_state = ST_INTERAKCJA;
-  }
+//  static uint16 delay_cnt = 50;
+//
+//  if (device_state == ST_OCENA)
+//  {
+//    delay_cnt--;
+//  }
+//
+//  if (delay_cnt == 0)
+//  {
+//    delay_cnt = 50;
+//    device_state = ST_INTERAKCJA;
+//  }
+//  static uint16_t hnr_cnt = 0;
+//  static uint8_t index_hnr = 0;
+//
+//  // rozne czasyd obu isr, jednakze sprawdzam dla debugu
+//  if (device_state == ST_OCENA)
+//  {
+//    if (index_hnr == 0 || index_hnr == 2 || index_hnr == 4)
+//      DEBUG_LED_ON;
+//    else
+//      DEBUG_LED_OFF;
+//
+//    if(hnr_cnt == 0)
+//    {
+//      hnr_cnt = holdandreleasetime[index_hnr];
+//      index_hnr++;
+//    }
+//
+//  }
+//
+//
+//  if (hnr_cnt > 0)
+//  {
+//    hnr_cnt--;
+//  }
+//
+//  if (index_hnr > 4)
+//  {
+//    index_hnr = 0;
+//    device_state = ST_INTERAKCJA;
+//  }
 }
 
 //getting random variables
@@ -69,10 +81,3 @@ ISR(ADC_vect)
   }
 }
 
-uint8_t SaveButtonStateTime(uint16_t * hnr_array, uint16_t time)
-{
-  *hnr_array += time;
-  // zwraca 1 zeby przesunac wskaznik, potem mozna dac ** i przesuwac wewnatrz
-  // lub po prostu przesuwac za kazdym wywolaniem w kodzie, na razie tak
-  return 1;
-}

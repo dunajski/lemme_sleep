@@ -15,7 +15,7 @@
 
 #define _UINT16_MAX_ASCII_DIGITS 5 // maks 65 535
 
-static uint8 ConversionUInt16ToAscii(uint16 value, uchar * buffer);
+static uint8 ConvertUInt16ToAscii(uint16 value, uchar * buffer, uchar leading_zeros, uchar size);
 
 void PutUInt8ToSerial(uint8 integer)
 {
@@ -27,12 +27,12 @@ void PutUInt8ToSerial(uint8 integer)
   PutToSerial(integer % 10 + '0');
 }
 
-void PutUint16ToSerial(uint16 value)
+void PutUint16ToSerial(uint16 value, uchar leading_zeros, uchar size)
 {
   uint8 how_many_digits = 0;
   uint8 ascii[_UINT16_MAX_ASCII_DIGITS];
 
-  how_many_digits = ConversionUInt16ToAscii(value, ascii);
+  how_many_digits = ConvertUInt16ToAscii(value, ascii, leading_zeros, size);
 
   for (int i = 0; i < how_many_digits; i++)
   {
@@ -40,21 +40,30 @@ void PutUint16ToSerial(uint16 value)
   }
 }
 
-static uint8 ConversionUInt16ToAscii(uint16 value, uchar * buffer)
+static uint8 ConvertUInt16ToAscii(uint16 value, uchar * buffer, uchar leading_zeros, uchar size)
 {
   uint8 length = 0;
   uint8 ascii[_UINT16_MAX_ASCII_DIGITS];
 
   do
   {
+    if (length >= size)
+      break;
+
     ascii[_UINT16_MAX_ASCII_DIGITS - 1 - length] = (value % 10) + '0';
     value /= 10;
     length++;
   } while (value > 0);
 
+  if (leading_zeros)
+  {
+    memset(buffer, '0', size - length);
+    buffer += size - length;
+  }
+
   memcpy(buffer, &ascii[_UINT16_MAX_ASCII_DIGITS - length], length);
 
-  return length;
+  return leading_zeros ? size : length;
 }
 
 struct

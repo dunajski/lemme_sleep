@@ -12,7 +12,6 @@
 #include "peripherals.h"
 #include "communication.h"
 
-
 #define NUM_RND 100
 #define NUM_ACTIONS 5
 
@@ -29,7 +28,5 @@ volatile uchar device_state;
 // nalezy dodac debounce dla release i obsluge dodawania wartosci holda
 // 3 holdy 2 releasy
 uint16 holdandreleasetime[NUM_ACTIONS];
-
-//uint8_t SaveButtonStateTime(uint16_t * hnr_array, uint16_t time);
 
 #endif /* RANDOM_H_ */
