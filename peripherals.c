@@ -108,7 +108,7 @@ ISR(TIMER2_COMP_vect)
   static uint8 key_state_interakcja = INITIAL_KEY_STATE;
   // pomocznia zmienna pewnie potem do wyciecia, zeby przechowywac ilosc zmian stanu
   static uint8 saved_states = 0;
-  static int m = 0;
+  static int idx = 0;
   // ISR co 0,4ms co tyle, losujemy random lsb
   // zeby nie "zapchac" kanalu trasnmisyjnego
   // stad volatile od wysylania bedzie zmieniany tutaj
@@ -299,39 +299,42 @@ ISR(TIMER2_COMP_vect)
     if (saved_states >= NUM_ACTIONS)
     {
 
-      if(m == 0)
+      // przed pierwszym holdem wyswietl liczbe kolejnej odebranej interakcji
+      if(idx == 0)
       {
         button_state_time = 0;
-        keycnt2 = 10000;  // przerwa 2 s
-//        hnr_time_ptr = holdandreleasetime;
+        keycnt2 = 10000;  // przerwa 2 s tak ad hoc min miedzy kolejnymi interakcjami
         hnr_time_ptr -= NUM_ACTIONS;
-        //StrToSerial("Losowanie nr:");
+        StrToSerial("Interakcja nr:");
         how_many_times_sent++;
         PutUInt8ToSerial(how_many_times_sent);
         StrToSerial("\n");
       }
 
-      if (!(m % 2))
-        StrToSerial("H");
+      if (!(idx % 2))
+        StrToSerial("H"); // H - Hold
       else
-        StrToSerial("R");
+        StrToSerial("R"); // R - Release
 
-      PutUInt8ToSerial(m);
+      PutUInt8ToSerial(idx);
       StrToSerial(": ");
 
-      PutUint16ToSerial(*hnr_time_ptr / 5, TRUE, 4);
+      // dziele przez 5 bo przerwanie jest co 0,2ms czyli 2/10 => 1/5 w taki sposob uzyskuje wartosc
+      // w ms
+      PutUint16ToSerial(*hnr_time_ptr / 5, TRUE, 5);
+      // kasuje wartosc, przygotwuje na kolejna interakcje
       *hnr_time_ptr = 0;
       StrToSerial(" ms\n");
       hnr_time_ptr++;
-      m++;
+      idx++;
     }
   }
 
-  if(m >= NUM_ACTIONS)
+  if(idx >= NUM_ACTIONS)
   {
     key_state_interakcja = INITIAL_KEY_STATE;
     saved_states = 0;
-    m = 0;
+    idx = 0;
     hnr_time_ptr -= NUM_ACTIONS;
   }
 
