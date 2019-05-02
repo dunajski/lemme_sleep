@@ -27,6 +27,6 @@ volatile uchar device_state;
 // tj. dla puszczenia (przerwy) oraz przytrzymania klawisza, zapisywanie gdy ST_INTERAKCJA
 // nalezy dodac debounce dla release i obsluge dodawania wartosci holda
 // 3 holdy 2 releasy
-uint16 holdandreleasetime[NUM_ACTIONS];
+volatile uint16 holdandreleasetime[NUM_ACTIONS];
 
 #endif /* RANDOM_H_ */

@@ -17,6 +17,8 @@
 volatile uint16 * hnr_time_ptr = holdandreleasetime;
 volatile uchar how_many_times_sent = 0;
 
+static uint8 EstimateActivity(uint16 hnr_time[], uchar rnd_values[], uint8 current_activity);
+
 // stany przycisku podczas odliczania czasu wcisnieta i puszczenia dla stanu ST_INTERAKCJA
 typedef enum KeySubState
 {
@@ -45,7 +47,8 @@ void InitUart(void)
 
 void InitTimer0(void)
 {
-  // ISR execute period 10 ms / interrupt /  CTC   // f CTC = fio/(2*presc*(1+OCR) -> t = 10 ms 1/t = fCTC -> 1/10ms -> 100 Hz
+  // ISR execute period 10 ms / interrupt /  CTC   // f CTC = fio/(2*presc*(1+OCR)
+  // -> t = 10 ms 1/t = fCTC -> 1/10ms -> 100 Hz
   // OCR ~= 77 5ms , OCR ~=155 10ms // presc 256 8 000 000 / 256 = 31250
   TCCR0 |= (1 << WGM01) | (1 << CS02);  // prescaler 256  | CTC mode
   TIMSK |= (1 << OCIE0);  //ctc timer0 isr enable
@@ -54,7 +57,8 @@ void InitTimer0(void)
 
 void InitTimer2(void)
 {
-  OCR2 = 199;  // F_CPU 8Mhz/16MHz przerwanie co 0,4ms/0,2ms
+  // JEST CO 0,2 ms przy 8MHz sprawdz czemu BlueBook
+  OCR2 = 199;  // F_CPU 8MHz/16MHz przerwanie co 0,4ms/0,2ms
   TCCR2 |= (1 << WGM21 | 1 << CS21);  //CTC pres 8
   TIMSK |= (1 << OCIE2);  //ctc timer2 isr enable
 }
@@ -94,6 +98,8 @@ void InitIO(void)
 //  StrToSerial("\n");
 }
 
+
+//TODO wrap clearing tables with  interaction and random values in function
 // isr to debounce key and measure feedback
 //ISR 0,4ms
 // keycnt 200 then 0,4 * 200 = 80ms
@@ -106,9 +112,10 @@ ISR(TIMER2_COMP_vect)
   static uint16 change_random_cnt = 0;
   static uint16 button_state_time = 0; // powinnien 16 bitowy wystarczyc 0,4 ms x 0xFFFF = ~26 s
   static uint8 key_state_interakcja = INITIAL_KEY_STATE;
-  // pomocznia zmienna pewnie potem do wyciecia, zeby przechowywac ilosc zmian stanu
   static uint8 saved_states = 0;
   static int idx = 0;
+  static uint8 activity_rate;
+
   // ISR co 0,4ms co tyle, losujemy random lsb
   // zeby nie "zapchac" kanalu trasnmisyjnego
   // stad volatile od wysylania bedzie zmieniany tutaj
@@ -340,5 +347,17 @@ ISR(TIMER2_COMP_vect)
 
   if (keycnt2 > 0)
     keycnt2--;
+
+  if(device_state == ST_OCENA)
+  {
+    activity_rate = EstimateActivity(holdandreleasetime, random_values);
+  }
 }
 
+// function to estimate activity of user of device
+static uint8 EstimateActivity(uint16 hnr_time[], uchar rnd_values[], uint8 current_activity)
+{
+  // there is a measure time of interaction and ive got random time
+  // extend random values to interaction resolution
+  // substract them and change activity and then finally change device state
+}
