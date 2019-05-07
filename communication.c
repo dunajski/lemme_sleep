@@ -14,8 +14,10 @@
 #define BAUD_REG ((F_CPU/(16*BAUDRATE))-1) //dzielnika cz. UBRR
 
 #define _UINT16_MAX_ASCII_DIGITS 5 // maks 65 535
+#define _SINT32_MAX_ASCII_DIGITS 11 // maks moze byc 10, ale dodaje w buforze jedno miejsce na '-'
 
 static uint8 ConvertUInt16ToAscii(uint16 value, uchar * buffer, uchar leading_zeros, uchar size);
+static uint8 ConverUInt32ToAscii(int32 value, uchar * buffer, uchar leading_zeros, uchar size);
 
 void PutUInt8ToSerial(uint8 integer)
 {
@@ -27,7 +29,7 @@ void PutUInt8ToSerial(uint8 integer)
   PutToSerial(integer % 10 + '0');
 }
 
-void PutUint16ToSerial(uint16 value, uchar leading_zeros, uchar size)
+void PutUInt16ToSerial(uint16 value, uchar leading_zeros, uchar size)
 {
   uint8 how_many_digits = 0;
   uint8 ascii[_UINT16_MAX_ASCII_DIGITS];
@@ -35,6 +37,27 @@ void PutUint16ToSerial(uint16 value, uchar leading_zeros, uchar size)
   how_many_digits = ConvertUInt16ToAscii(value, ascii, leading_zeros, size);
 
   for (int i = 0; i < how_many_digits; i++)
+  {
+    PutToSerial(ascii[i]);
+  }
+}
+
+void PutSInt32ToSerial(int32 value, uchar leading_zeros, uchar size)
+{
+  uint8 how_many_digits = 0;
+  uint8 ascii[_SINT32_MAX_ASCII_DIGITS];
+  uint8 i = 0;
+
+  if (0 > value)
+  {
+    value = value * (-1);
+    PutToSerial('-');
+    i++;
+  }
+
+  how_many_digits = ConverUInt32ToAscii(value, ascii, leading_zeros, size);
+
+  for (; i < how_many_digits; i++)
   {
     PutToSerial(ascii[i]);
   }
@@ -62,6 +85,33 @@ static uint8 ConvertUInt16ToAscii(uint16 value, uchar * buffer, uchar leading_ze
   }
 
   memcpy(buffer, &ascii[_UINT16_MAX_ASCII_DIGITS - length], length);
+
+  return leading_zeros ? size : length;
+}
+
+static uint8 ConverUInt32ToAscii(int32 value, uchar * buffer, uchar leading_zeros, uchar size)
+{
+  uint8 length = 0;
+  uint8 ascii[_SINT32_MAX_ASCII_DIGITS]; // 1 for '-' if needed
+
+  do
+  {
+    if (length >= size)
+      break;
+
+      ascii[_SINT32_MAX_ASCII_DIGITS - 1 - length] = (value % 10) + '0';
+
+    value /= 10;
+    length++;
+  } while (value > 0);
+
+  if (leading_zeros)
+  {
+    memset(buffer, '0', size - length);
+    buffer += size - length;
+  }
+
+  memcpy(buffer, &ascii[_SINT32_MAX_ASCII_DIGITS - length], length);
 
   return leading_zeros ? size : length;
 }

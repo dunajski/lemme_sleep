@@ -27,5 +27,6 @@ typedef enum DeviceState
 typedef unsigned char uchar;
 typedef uint16_t uint16;
 typedef uint8_t uint8;
+typedef int32_t int32;
 
 #endif /* TYPES_H_ */

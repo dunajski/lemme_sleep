@@ -17,7 +17,7 @@
 volatile uint16 * hnr_time_ptr = holdandreleasetime;
 volatile uchar how_many_times_sent = 0;
 
-static uint8 EstimateActivity(uint16 hnr_time[], uchar rnd_values[], uint8 current_activity);
+//static uint8 EstimateActivity(uint16 hnr_time[], uchar rnd_values[], uint8 current_activity);
 
 // stany przycisku podczas odliczania czasu wcisnieta i puszczenia dla stanu ST_INTERAKCJA
 typedef enum KeySubState
@@ -86,16 +86,9 @@ void InitIO(void)
 
   device_state = ST_INTERAKCJA; // na razie rozpocznij od razu od losowania
 
-//  PutUint16ToSerial(0xFF98);
-//  StrToSerial("\n");
-//  PutUint16ToSerial(0x0001);
-//  StrToSerial("\n");
-//  PutUint16ToSerial(0x02);
-//  StrToSerial("\n");
-//  PutUint16ToSerial(0x0F0F);
-//  StrToSerial("\n");
-//  PutUint16ToSerial(0x0FFF);
-//  StrToSerial("\n");
+  PutSInt32ToSerial(-10, TRUE, 15);
+  StrToSerial("\n");
+  PutSInt32ToSerial(123112L, TRUE, 15);
 }
 
 
@@ -328,7 +321,7 @@ ISR(TIMER2_COMP_vect)
 
       // dziele przez 5 bo przerwanie jest co 0,2ms czyli 2/10 => 1/5 w taki sposob uzyskuje wartosc
       // w ms
-      PutUint16ToSerial(*hnr_time_ptr / 5, TRUE, 5);
+      PutUInt16ToSerial(*hnr_time_ptr / 5, TRUE, 5);
       // kasuje wartosc, przygotwuje na kolejna interakcje
       *hnr_time_ptr = 0;
       StrToSerial(" ms\n");
@@ -350,14 +343,15 @@ ISR(TIMER2_COMP_vect)
 
   if(device_state == ST_OCENA)
   {
-    activity_rate = EstimateActivity(holdandreleasetime, random_values);
+//    activity_rate = EstimateActivity(holdandreleasetime, random_values, activity_rate);
   }
 }
 
-// function to estimate activity of user of device
-static uint8 EstimateActivity(uint16 hnr_time[], uchar rnd_values[], uint8 current_activity)
-{
-  // there is a measure time of interaction and ive got random time
-  // extend random values to interaction resolution
-  // substract them and change activity and then finally change device state
-}
+//// function to estimate activity of user of device
+//static uint8 EstimateActivity(uint16 hnr_time[], uchar rnd_values[], uint8 current_activity)
+//{
+//  // there is a measure time of interaction and ive got random time
+//  // extend random values to interaction resolution
+//  // substract them and change activity and then finally change device state
+//  return current_activity;
+//}
