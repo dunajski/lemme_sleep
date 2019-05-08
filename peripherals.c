@@ -47,16 +47,18 @@ void InitUart(void)
 
 void InitTimer0(void)
 {
+  // TODO popraw opis
   // ISR execute period 10 ms / interrupt /  CTC   // f CTC = fio/(2*presc*(1+OCR)
   // -> t = 10 ms 1/t = fCTC -> 1/10ms -> 100 Hz
   // OCR ~= 77 5ms , OCR ~=155 10ms // presc 256 8 000 000 / 256 = 31250
-  TCCR0 |= (1 << WGM01) | (1 << CS02);  // prescaler 256  | CTC mode
+  TCCR0 |= (1 << WGM01) | (1 << CS02) | (1 << CS00);  // prescaler 1024  | CTC mode
   TIMSK |= (1 << OCIE0);  //ctc timer0 isr enable
-  OCR0 = 155;
+  OCR0 = 77;
 }
 
 void InitTimer2(void)
 {
+  // TODO popraw opis
   // JEST CO 0,2 ms przy 8MHz sprawdz czemu BlueBook
   OCR2 = 199;  // F_CPU 8MHz/16MHz przerwanie co 0,4ms/0,2ms
   TCCR2 |= (1 << WGM21 | 1 << CS21);  //CTC pres 8
@@ -84,11 +86,21 @@ void InitIO(void)
   ADC_PIN_DIR = 0; // wejscie
   ADC_PIN_PULLUP = 0; // bez pullupu, niech dryfuje
 
-  device_state = ST_INTERAKCJA; // na razie rozpocznij od razu od losowania
+  device_state = ST_WIBROWANIE;
 
   PutSInt32ToSerial(-10, TRUE, 15);
   StrToSerial("\n");
   PutSInt32ToSerial(123112L, TRUE, 15);
+  StrToSerial("\n");
+  PutUInt16ToSerial(random_values_grouped[0], FALSE, 8);
+  StrToSerial("\n");
+  PutUInt16ToSerial(random_values_grouped[1], FALSE, 8);
+  StrToSerial("\n");
+  PutUInt16ToSerial(random_values_grouped[2], FALSE, 8);
+  StrToSerial("\n");
+  PutUInt16ToSerial(random_values_grouped[3], FALSE, 8);
+  StrToSerial("\n");
+  PutUInt16ToSerial(random_values_grouped[4], FALSE, 8);
 }
 
 
@@ -114,19 +126,19 @@ ISR(TIMER2_COMP_vect)
   // stad volatile od wysylania bedzie zmieniany tutaj
   // jeszcze od state bedzie zmieniane, jednakze na razie jest tak
 
-  change_random_cnt++;
-
-  if (change_random_cnt >= 25000) // co 200ms losowanie kolejnej liczby
-  {
-    change_random = 1;
-
-    if (device_state != ST_OCENA)
-    {
-      TOGGLE_BIT(PORTA,PA6);
-    }
-//    draw_random_cnt++;
-    change_random_cnt = 0;
-  }
+//  change_random_cnt++;
+//
+//  if (change_random_cnt >= 25000) // co 200ms losowanie kolejnej liczby
+//  {
+//    change_random = 1;
+//
+//    if (device_state != ST_OCENA)
+//    {
+//      TOGGLE_BIT(PORTA,PA6);
+//    }
+////    draw_random_cnt++;
+//    change_random_cnt = 0;
+//  }
 
 //  if (draw_random_cnt >= 10000)
 //  {
@@ -202,7 +214,6 @@ ISR(TIMER2_COMP_vect)
 
   if (keycnt > 0)
     keycnt--;
-
 
   if (device_state == ST_INTERAKCJA)
   {
