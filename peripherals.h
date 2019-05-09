@@ -18,8 +18,8 @@ struct PortABits
   volatile uchar action_key :1;  // PA 1
   volatile uchar :3;  // PA 2-4
   volatile uchar motor :1;  // PA 5
-  volatile uchar debug_led :1;  // PA 6
-  volatile uchar state_led :1;  // PA 7
+  volatile uchar debug_led :1;  // PA 6 // do prototypowania nie beda lutowane
+  volatile uchar state_led :1;  // PA 7 // do prototypowania nie beda lutowane
 };
 
 typedef struct PortABits TPortABits;
