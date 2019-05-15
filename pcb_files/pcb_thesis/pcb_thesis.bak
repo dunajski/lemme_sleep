@@ -65,7 +65,7 @@ L Switch:SW_DPST_x2 SW?
 U 1 1 5C461EFF
 P 3450 2750
 F 0 "SW?" V 3500 3100 50  0000 R CNN
-F 1 "SW_DPST_x2" V 3400 3300 50  0000 R CNN
+F 1 "RESET SW" V 3350 3200 50  0000 R CNN
 F 2 "" H 3450 2750 50  0001 C CNN
 F 3 "" H 3450 2750 50  0001 C CNN
 	1    3450 2750
@@ -498,17 +498,6 @@ F 3 "~" H 6250 5150 50  0001 C CNN
 	1    6250 5150
 	-1   0    0    1   
 $EndComp
-$Comp
-L MCU_Microchip_ATmega:ATmega32A-AU U?
-U 1 1 5C46225A
-P 5150 4050
-F 0 "U?" H 4700 2100 50  0000 C CNN
-F 1 "ATmega32A-AU" H 5500 2050 50  0000 C CNN
-F 2 "Package_QFP:TQFP-44_10x10mm_P0.8mm" H 5150 4050 50  0001 C CIN
-F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/atmel-8155-8-bit-microcontroller-avr-atmega32a_datasheet.pdf" H 5150 4050 50  0001 C CNN
-	1    5150 4050
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	5750 5050 6050 5050
 Wire Wire Line
@@ -551,8 +540,8 @@ $Comp
 L Switch:SW_DPST_x2 SW?
 U 1 1 5C49ECC9
 P 6450 2350
-F 0 "SW?" V 6500 2700 50  0000 R CNN
-F 1 "SW_DPST_x2" V 6400 2900 50  0000 R CNN
+F 0 "SW?" H 6500 2500 50  0000 R CNN
+F 1 "ACTION SW" H 6600 2250 50  0000 R CNN
 F 2 "" H 6450 2350 50  0001 C CNN
 F 3 "" H 6450 2350 50  0001 C CNN
 	1    6450 2350
@@ -667,4 +656,15 @@ Wire Wire Line
 Wire Wire Line
 	5900 2450 5750 2450
 NoConn ~ 5750 4650
+$Comp
+L MCU_Microchip_ATmega:ATmega32L-8AU U?
+U 1 1 5CD8387E
+P 5150 4050
+F 0 "U?" H 4700 2000 50  0000 C CNN
+F 1 "ATmega32L-8AU" H 5550 2050 50  0000 C CNN
+F 2 "Package_QFP:TQFP-44_10x10mm_P0.8mm" H 5150 4050 50  0001 C CIN
+F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/doc2503.pdf" H 5150 4050 50  0001 C CNN
+	1    5150 4050
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
