@@ -13,6 +13,12 @@
 #define CLEAR_BIT(byte, bit) (byte &= ~BV(bit))
 #define TOGGLE_BIT(byte, bit) (byte ^= BV(bit))
 
+// macro zeby nie wywalac duzo kodu, to co w trakcie prototypowania debugowania jest uzywane mozna
+// tym zakomentowac
+#define DEBUG_STATE _OFF // _ON/_OFF
+#define _ON         (1)
+#define _OFF        (2)
+
 #define _NumItems(array) (sizeof(array)/sizeof(array[0]))
 
 typedef enum DeviceState

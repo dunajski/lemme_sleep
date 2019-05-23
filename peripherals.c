@@ -11,6 +11,8 @@
 #include "peripherals.h"
 
 #define ISR_DEBOUNCE_CNT 200
+#define _BREAK_TIME_S(x) (10000UL*x)
+
 #define TRUE (1)
 #define FALSE (0)
 
@@ -22,17 +24,17 @@ volatile uchar how_many_times_sent = 0;
 // stany przycisku podczas odliczania czasu wcisnieta i puszczenia dla stanu ST_INTERAKCJA
 typedef enum KeySubState
 {
-  INITIAL_KEY_STATE = 0, // stan przed wcisnieciem pierwszym
-  BUTTON_NOT_PRESSED, // stan puszczenia, ale musi uprzednio wystapic choc jedno wcisniecie
-  BUTTON_PRESSED, // stan do rozpoczecia odlcizania wcisniecia, oraz ogolnego rozpoczenia mierzenia
-  BUTTON_IS_HOLDED, // stan do naliczania czasu po debounce po wcisnieciu przycisku
-  BUTTON_IS_RELEASED // stan do naliczania czasu po debounce po zwolnieniu przycisku
+  INITIAL_KEY_STATE = 0,  // stan przed wcisnieciem pierwszym
+  BUTTON_NOT_PRESSED,     // stan puszczenia, ale musi uprzednio wystapic choc jedno wcisniecie
+  BUTTON_PRESSED,         // stan do rozpoczecia odlcizania wcisniecia, oraz ogolnego rozpoczenia mierzenia
+  BUTTON_IS_HOLDED,       // stan do naliczania czasu po debounce po wcisnieciu przycisku
+  BUTTON_IS_RELEASED      // stan do naliczania czasu po debounce po zwolnieniu przycisku
 
 } TKeySubstates;
 
-#define FIFO_LEN 128 //dlugosc kolejek FIFO
+#define FIFO_LEN 128  //dlugosc kolejek FIFO
 
-#define BAUDRATE 9600L//115200L
+#define BAUDRATE 9600UL  //115200L
 #define BAUD_REG ((F_CPU/(16*BAUDRATE))-1) // freq. divider
 
 void InitUart(void)
@@ -42,32 +44,29 @@ void InitUart(void)
   //Format ramki danych: 8data,1stopbit
   UCSRC |= ((1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1));
   UCSRB |= ((1 << RXEN) | (1 << TXEN));  // RX/TX enable
-  UCSRB |= (1 << RXCIE);  //RX ISR enable
+  UCSRB |= (1 << RXCIE);                 //RX ISR enable
 }
 
 void InitTimer0(void)
 {
-  // TODO popraw opis
-  // ISR execute period 10 ms / interrupt /  CTC   // f CTC = fio/(2*presc*(1+OCR)
+  // ISR execute period 10 ms / interrupt /  CTC   // f CTC = fio/(presc*(1+OCR)
   // -> t = 10 ms 1/t = fCTC -> 1/10ms -> 100 Hz
-  // OCR ~= 77 5ms , OCR ~=155 10ms // presc 256 8 000 000 / 256 = 31250
   TCCR0 |= (1 << WGM01) | (1 << CS02) | (1 << CS00);  // prescaler 1024  | CTC mode
-  TIMSK |= (1 << OCIE0);  //ctc timer0 isr enable
+  TIMSK |= (1 << OCIE0);                              //ctc timer0 isr enable
   OCR0 = 77;
 }
 
 void InitTimer2(void)
 {
-  // TODO popraw opis
-  // JEST CO 0,2 ms przy 8MHz sprawdz czemu BlueBook
-  OCR2 = 199;  // F_CPU 8MHz/16MHz przerwanie co 0,4ms/0,2ms
-  TCCR2 |= (1 << WGM21 | 1 << CS21);  //CTC pres 8
-  TIMSK |= (1 << OCIE2);  //ctc timer2 isr enable
+  OCR2 = 199;  // F_CPU 8MHz przerwanie co 0,2ms f CTC = fio/(presc*(1+OCR))
+  // -> f CTC = 8 000 000 / (8 * 200) = 5000 => 1/5000 = 0,2 ms
+  TCCR2 |= (1 << WGM21 | 1 << CS21);  //CTC | presc 8
+  TIMSK |= (1 << OCIE2);              //CTC timer2 isr enable
 }
 
 void InitAdc(void)
 {
-  ADMUX |= (1 << REFS0);  //drfting pin lepiej na AREFie bez niczego
+  ADMUX |= (1 << REFS0);  //drifting pin lepiej na AREFie bez niczego
 //  ADCSRA |= (1 << ADEN) | (1 << ADSC) | (1 << ADATE) | (1 << ADIE) | (1 << ADPS1) | (1 << ADPS2);
   ADCSRA |= (1 << ADEN) | (1 << ADATE) | (1 << ADIE) | (1 << ADPS1) | (1 << ADPS2);
   // ADC ENABLE/start conversion/autotriger EN/interrupt execute EN/ presk 64  f_adc=8MHz/64=125kHz
@@ -81,13 +80,15 @@ void InitIO(void)
   MOTOR_DIR = 1;
 
   ACTION_KEY_PULLUP = 1;
-  ACTION_KEY_DIR = 0;
+  ACTION_KEY_DIR    = 0;
 
-  ADC_PIN_DIR = 0; // wejscie
+  ADC_PIN_DIR    = 0; // wejscie
   ADC_PIN_PULLUP = 0; // bez pullupu, niech dryfuje
 
   device_state = ST_WIBROWANIE;
 
+// to co ma sie zrobic przed petla glowna
+#if DEBUG_STATE == _ON
   PutSInt32ToSerial(-10, TRUE, 15);
   StrToSerial("\n");
   PutSInt32ToSerial(123112L, TRUE, 15);
@@ -101,53 +102,26 @@ void InitIO(void)
   PutUInt16ToSerial(random_values_grouped[3], FALSE, 8);
   StrToSerial("\n");
   PutUInt16ToSerial(random_values_grouped[4], FALSE, 8);
+#endif
 }
 
-
-//TODO wrap clearing tables with  interaction and random values in function
 // isr to debounce key and measure feedback
-//ISR 0,4ms
-// keycnt 200 then 0,4 * 200 = 80ms
-// 0,2ms?
+//ISR 0,2ms
+// keycnt 200 then 0,2 * 200 = 40ms
 ISR(TIMER2_COMP_vect)
 {
-  static uint16 keycnt = 0, keycnt2 = 0;
-  static uint8 keylev = 0;
-  static uint8 keyr = 0;
-  static uint16 change_random_cnt = 0;
+  static uint8  keyr = 0;
+  static uint8  index = 0;
+  static uint8  keylev = 0;
+  static uint8  saved_states = 0;
+  static uint8  key_state_interakcja = INITIAL_KEY_STATE;
+  static uint16 keycnt = 0;
+  static uint16 keycnt2 = 0;
   static uint16 button_state_time = 0; // powinnien 16 bitowy wystarczyc 0,4 ms x 0xFFFF = ~26 s
-  static uint8 key_state_interakcja = INITIAL_KEY_STATE;
-  static uint8 saved_states = 0;
-  static int idx = 0;
-  static uint8 activity_rate;
+//  static uint16 change_random_cnt = 0;
+//  static uint8 activity_rate;
 
-  // ISR co 0,4ms co tyle, losujemy random lsb
-  // zeby nie "zapchac" kanalu trasnmisyjnego
-  // stad volatile od wysylania bedzie zmieniany tutaj
-  // jeszcze od state bedzie zmieniane, jednakze na razie jest tak
 
-//  change_random_cnt++;
-//
-//  if (change_random_cnt >= 25000) // co 200ms losowanie kolejnej liczby
-//  {
-//    change_random = 1;
-//
-//    if (device_state != ST_OCENA)
-//    {
-//      TOGGLE_BIT(PORTA,PA6);
-//    }
-////    draw_random_cnt++;
-//    change_random_cnt = 0;
-//  }
-
-//  if (draw_random_cnt >= 10000)
-//  {
-//    TurnADCOff;
-//  }
-//
-
-  // obsluga klawisza, jedynego pewnie wiec nalezy uzaleznic od
-  // stanu urzadzenia (TDeviceStates)
   if (keycnt == 0)
   {
     switch (keylev)
@@ -169,32 +143,15 @@ ISR(TIMER2_COMP_vect)
           switch (device_state)
           {
             case ST_IDLE:
-              // nalezaloby jaks rozbudzic, finalnie moze sie okazac, ze lepiej
-              // zeby klawiszem ktorym sterujemy byl inny niz ten na PortA,a tam gdzie EXT0/1
+              // w przerwaniu od INT1, dodaj jakiegos statica 3 razy
             break;
             case ST_WIBROWANIE:
-              // sterowanie silnikiem ze wzgledu na wylosowane wartosci
-              // obsluga klawisza do dyskusji bo uzytkownik powininen
-              // starac sie zapamietac losowa wibracje
+              // w trakcie wibrowania nie obchodzi nas czy ktos klika
             break;
             case ST_INTERAKCJA:
-              // obsluga, zapisu interakcji najitotniejsze czyli mierzenie odpowiedzi uzytkownika
-              // nastepnym stanem tj. po uplynieciu maksymalnego czasu oczekiwania na odopowiedz
-              // powinien byc stan podjecia decyzji o tym jak ma wygladac kolejne nadawanie
-              // po debounce dodaj wartosc debounce az do puszczenia przycisku
-              // debounce po puszczeniu
-
-              // jesli wciaz wcisniety i interakcja to dodawaj button state, tak
-              // dlugo az uzytkownik pusci dzwignie/przycisk
-              // jesli uzytkownik puscil przycisk to przestan naliczac button_state_time i zacznij
-              // debounce dla puszczenia przycisku
+              // odbieranie sekwencji od uzytkownika
             break;
             case ST_OCENA:
-              // na razie wyslij po odliczaniu wartosci zobaczymy czy naliczanie ma sens
-//              for (int i = 0; i <= 4 ; i++)
-//              {
-//                PutUint16ToSerial(holdandreleasetime[i]);
-//              }
             case ST_LOSOWANIE:
             default:
               // do nothing
@@ -311,41 +268,46 @@ ISR(TIMER2_COMP_vect)
     {
 
       // przed pierwszym holdem wyswietl liczbe kolejnej odebranej interakcji
-      if(idx == 0)
+      if(index == 0)
       {
         button_state_time = 0;
-        keycnt2 = 10000;  // przerwa 2 s tak ad hoc min miedzy kolejnymi interakcjami
+        keycnt2 = _BREAK_TIME_S(2);  // przerwa 2 s tak ad hoc min miedzy kolejnymi interakcjami
         hnr_time_ptr -= NUM_ACTIONS;
+        #if DEBUG_STATE == _ON
         StrToSerial("Interakcja nr:");
         how_many_times_sent++;
         PutUInt8ToSerial(how_many_times_sent);
         StrToSerial("\n");
+        #endif
       }
 
-      if (!(idx % 2))
+      #if DEBUG_STATE == _ON
+      if (!(index % 2))
         StrToSerial("H"); // H - Hold
       else
         StrToSerial("R"); // R - Release
 
-      PutUInt8ToSerial(idx);
+      PutUInt8ToSerial(index);
       StrToSerial(": ");
 
       // dziele przez 5 bo przerwanie jest co 0,2ms czyli 2/10 => 1/5 w taki sposob uzyskuje wartosc
       // w ms
       PutUInt16ToSerial(*hnr_time_ptr / 5, TRUE, 5);
       // kasuje wartosc, przygotwuje na kolejna interakcje
-      *hnr_time_ptr = 0;
       StrToSerial(" ms\n");
+      #endif
+
+      *hnr_time_ptr = 0;
       hnr_time_ptr++;
-      idx++;
+      index++;
     }
   }
 
-  if(idx >= NUM_ACTIONS)
+  if(index >= NUM_ACTIONS)
   {
     key_state_interakcja = INITIAL_KEY_STATE;
     saved_states = 0;
-    idx = 0;
+    index = 0;
     hnr_time_ptr -= NUM_ACTIONS;
   }
 

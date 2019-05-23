@@ -16,7 +16,7 @@ ISR(TIMER0_COMP_vect)
   // stad wartosci w random values grouped beda sie roznic o 500 jednakze to oznacza
   // ISR wywolywane jest co 10 ms stad 500 ms / 10 ms oznacza 50 przerwan w celu
   // wyznaczenia 0,5 s znacznika czasu
-  static uint8 time_divider = 0;
+  //  static uint8 time_divider = 0;
   static uint8 rnd_val_gr_idx = 0;
   static uint16 rnd_val_cnt = 0;
 

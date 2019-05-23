@@ -12,11 +12,11 @@
 #include "peripherals.h"
 #include "communication.h"
 
-#define NUM_RND 13
+#define NUM_RND     13
 #define NUM_ACTIONS 5
 
-#define TurnADCOn ADCSRA|=(1<<ADEN)|(1<<ADSC)
-#define TurnADCOff ADCSRA&=~(1<<ADEN)
+#define TurnADCOn   ADCSRA|=(1<<ADEN)|(1<<ADSC)
+#define TurnADCOff  ADCSRA&=~(1<<ADEN)
 
 volatile uchar random_lsb;
 volatile uchar change_random;
