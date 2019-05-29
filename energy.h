@@ -8,5 +8,6 @@
 #ifndef ENERGY_H_
 #define ENERGY_H_
 
+extern volatile uint16 debounce_idle_delay;
 
 #endif /* ENERGY_H_ */

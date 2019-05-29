@@ -9,6 +9,8 @@
 #include "random.h"
 
 volatile uint16 random_values_grouped[NUM_ACTIONS] = {5000, 5000, 5000, 5000, 5000};
+volatile uchar change_random = 0;
+
 //ISR to turn on motor  co 10ms
 ISR(TIMER0_COMP_vect)
 {
@@ -33,10 +35,12 @@ ISR(TIMER0_COMP_vect)
     if (!(rnd_val_gr_idx % 2))
     {
       DEBUG_LED_ON;
+      MOTOR_ON;
     }
     else
     {
       DEBUG_LED_OFF;
+      MOTOR_OFF;
     }
 
     rnd_val_cnt++;
@@ -44,9 +48,7 @@ ISR(TIMER0_COMP_vect)
     if (rnd_val_gr_idx >= NUM_ACTIONS)
     {
       rnd_val_gr_idx = 0;
-      device_state = ST_LOSOWANIE;
-      change_random = 1;
-      TurnADCOn;
+      device_state = ST_INTERAKCJA;
     }
   }
 
@@ -59,24 +61,20 @@ ISR(ADC_vect)
 
   if (device_state == ST_LOSOWANIE)
   {
+    // jesli losowanie, losuj tak dlugo az index bedzie rowny 13, tyle bitow losujemy
     if (change_random)
     {
       random_lsb = ADC & 0x01;
-//    PutUInt8ToSerial(random_lsb);
-//    StrToSerial("\n");
       random_values[rnd_idx] = random_lsb;
-      PutUInt8ToSerial(rnd_idx + 1);
-      StrToSerial(":");
-      PutUInt8ToSerial(random_values[rnd_idx]);
-      StrToSerial("\n");
       rnd_idx++;
-      change_random = 0;
     }
 
+    // jesli wylosowano 13 bitow przejd do wibrowania, wylacz ADC
     if (rnd_idx >= NUM_RND)
     {
       // TODO zrob funkcje ktora wypelni rand val grouped wartosciami wylosowanymi
       rnd_idx = 0;
+      change_random = 0;
       TurnADCOff;
       device_state = ST_WIBROWANIE;
     }

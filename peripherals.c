@@ -9,8 +9,8 @@
 #include <avr/iom32.h>
 #include <stdint.h>
 #include "peripherals.h"
+#include "energy.h"
 
-#define ISR_DEBOUNCE_CNT 200
 #define _BREAK_TIME_S(x) (10000UL*x)
 
 #define TRUE (1)
@@ -36,6 +36,11 @@ typedef enum KeySubState
 
 #define BAUDRATE 9600UL  //115200L
 #define BAUD_REG ((F_CPU/(16*BAUDRATE))-1) // freq. divider
+
+void GoToSleep(void)
+{
+
+}
 
 void InitUart(void)
 {
@@ -121,6 +126,11 @@ ISR(TIMER2_COMP_vect)
 //  static uint16 change_random_cnt = 0;
 //  static uint8 activity_rate;
 
+  if (device_state == ST_LOSOWANIE && change_random == 0)
+  {
+    TurnADCOn;
+    change_random = 1;
+  }
 
   if (keycnt == 0)
   {
@@ -262,10 +272,12 @@ ISR(TIMER2_COMP_vect)
       }
     }
 
-
     // jesli zapisano piec stanow 3H i 2R to zakoncz i przejdz do oceny
     if (saved_states >= NUM_ACTIONS)
     {
+
+      // TODO przekopiuj do tablic i ustaw ocene
+      // wyzeruj tablice robocza
 
       // przed pierwszym holdem wyswietl liczbe kolejnej odebranej interakcji
       if(index == 0)
@@ -309,6 +321,7 @@ ISR(TIMER2_COMP_vect)
     saved_states = 0;
     index = 0;
     hnr_time_ptr -= NUM_ACTIONS;
+    device_state = ST_OCENA;
   }
 
   if (keycnt2 > 0)
@@ -317,7 +330,17 @@ ISR(TIMER2_COMP_vect)
   if(device_state == ST_OCENA)
   {
 //    activity_rate = EstimateActivity(holdandreleasetime, random_values, activity_rate);
+    // TODO activity rate ustala czy losujemy czy idle, ale na razie testy czy smooth przechodzi
+    // przez state'y tj. wybudz sie, wylosuj, zamigaj/wibruj, oczekuj odpowiedzi, z oceny przejdz
+    // znowu do idle'a
+    device_state = ST_IDLE;
+
   }
+
+
+  // debounce, zeby nie dalo sie spamowac w przerwanie zewnetrznym
+  if(debounce_idle_delay > 0)
+    debounce_idle_delay--;
 }
 
 //// function to estimate activity of user of device

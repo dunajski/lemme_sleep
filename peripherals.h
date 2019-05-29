@@ -12,6 +12,8 @@
 #include "random.h"
 #include "types.h"
 
+#define ISR_DEBOUNCE_CNT 200
+
 typedef struct PortABits
 {
   volatile uchar adc_pin :1;    // PA 0
@@ -51,6 +53,9 @@ typedef struct PortDBits
 
 #define DEBUG_LED_ON   DEBUG_LED_OUT=1
 #define DEBUG_LED_OFF  DEBUG_LED_OUT=0
+
+#define MOTOR_ON   MOTOR_OUT=1
+#define MOTOR_OFF  MOTOR_OUT=0
 
 void InitUart(void);
 void InitTimer0(void);
