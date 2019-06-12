@@ -19,7 +19,12 @@ int main(void)
   InitTimer2();
   InitIO();
   sei();
-  while (1);
+  while (1)
+  {
+    // zaczynamy od pojscia spac i oczekujemy wybudzenia trzykrotnym nacisnieciem dzwigni
+    if(device_state == ST_IDLE)
+      GoToSleep();
+  }
 
   return 0;
 }

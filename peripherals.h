@@ -51,16 +51,17 @@ typedef struct PortDBits
 #define ADC_PIN_DIR     ((TPortABits *)&DDRA)->adc_pin
 #define ADC_PIN_PULLUP  ((TPortABits *)&PORTA)->adc_pin
 
-#define DEBUG_LED_ON   DEBUG_LED_OUT=1
-#define DEBUG_LED_OFF  DEBUG_LED_OUT=0
+#define DEBUG_LED_ON   (DEBUG_LED_OUT=1)
+#define DEBUG_LED_OFF  (DEBUG_LED_OUT=0)
 
-#define MOTOR_ON   MOTOR_OUT=1
-#define MOTOR_OFF  MOTOR_OUT=0
+#define MOTOR_ON   (MOTOR_OUT=1)
+#define MOTOR_OFF  (MOTOR_OUT=0)
 
 void InitUart(void);
 void InitTimer0(void);
 void InitTimer2(void);
 void InitAdc(void);
 void InitIO(void);
+void GoToSleep(void);
 
 #endif /* PERIPHERALS_H_ */

@@ -15,7 +15,7 @@
 
 // macro zeby nie wywalac duzo kodu, to co w trakcie prototypowania debugowania jest uzywane mozna
 // tym zakomentowac
-#define DEBUG_STATE _OFF // _ON/_OFF
+#define DEBUG_STATE _ON // _ON/_OFF
 #define _ON         (1)
 #define _OFF        (2)
 

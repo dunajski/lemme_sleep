@@ -7,6 +7,8 @@
 
 #include <avr/interrupt.h>
 #include <avr/iom32.h>
+#include <avr/sleep.h>
+
 #include <stdint.h>
 #include "peripherals.h"
 #include "energy.h"
@@ -39,7 +41,13 @@ typedef enum KeySubState
 
 void GoToSleep(void)
 {
-
+  sei(); // just in case someone didnt enable interrupts and mcu gonna sleep forever
+  #if DEBUG_STATE == _ON
+  DEBUG_LED_ON;
+  StrToSerial("Idem spac\n");
+  #endif
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  sleep_mode(); // usypia proca
 }
 
 void InitUart(void)
@@ -90,7 +98,7 @@ void InitIO(void)
   ADC_PIN_DIR    = 0; // wejscie
   ADC_PIN_PULLUP = 0; // bez pullupu, niech dryfuje
 
-  device_state = ST_WIBROWANIE;
+  device_state = ST_IDLE;
 
 // to co ma sie zrobic przed petla glowna
 #if DEBUG_STATE == _ON
@@ -333,10 +341,11 @@ ISR(TIMER2_COMP_vect)
     // TODO activity rate ustala czy losujemy czy idle, ale na razie testy czy smooth przechodzi
     // przez state'y tj. wybudz sie, wylosuj, zamigaj/wibruj, oczekuj odpowiedzi, z oceny przejdz
     // znowu do idle'a
+    #if DEBUG_STATE == _ON
+    StrToSerial("dzis nie oceniam, ide spac\n");
+    #endif
     device_state = ST_IDLE;
-
   }
-
 
   // debounce, zeby nie dalo sie spamowac w przerwanie zewnetrznym
   if(debounce_idle_delay > 0)

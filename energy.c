@@ -29,6 +29,10 @@ ISR(INT1_vect)
   {
     pressed_times = 0;
     device_state = ST_LOSOWANIE;
+    DEBUG_LED_OFF;
+    #if DEBUG_STATE == _ON
+    StrToSerial("Wstaje, losuje\n");
+    #endif
   }
 }
 
