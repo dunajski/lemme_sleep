@@ -14,7 +14,7 @@
 
 int main(void)
 {
-  InitUart();
+  InitUsart();
   InitAdc();
   InitTimer0();
   InitTimer2();

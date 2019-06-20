@@ -42,6 +42,13 @@ typedef enum KeySubState
 #define BAUDRATE 9600UL  //115200L
 #define BAUD_REG ((F_CPU/(16*BAUDRATE))-1) // freq. divider
 
+/*
+ *******************************************************************************
+ * Przeprowadza procedure usypiania MCU, wylaczajac przerwania od wszystkich
+ * peryferiow oprocz przerwania zewnetrznego. Nastepnie po przebudzeniu
+ * przywraca wszystkie przerwania od peryferiow.
+ *******************************************************************************
+ */
 void GoToSleep(void)
 {
   // enable external interrupt
@@ -62,15 +69,20 @@ void GoToSleep(void)
   sleep_disable();
 
   // znowu uzywamy przerwan ;>
-  TIMSK |= (1 << OCIE0);
-  TIMSK |= (1 << OCIE2);
-  ADCSRA |= (1 << ADIE);
-  UCSRB |= (1 << RXCIE);
-  UCSRB |= (1 << UDRIE);  // wlaczenie przerwan
+  TIMSK   |= (1 << OCIE0);
+  TIMSK   |= (1 << OCIE2);
+  ADCSRA  |= (1 << ADIE);
+  UCSRB   |= (1 << RXCIE);
+  UCSRB   |= (1 << UDRIE);  // wlaczenie przerwan
   sei();
 }
 
-void InitUart(void)
+/*
+ *******************************************************************************
+ * Inicjuje UART, 9600/8N1. Komunikacja na przerwaniach.
+ *******************************************************************************
+ */
+void InitUsart(void)
 {
   UBRRH = (BAUD_REG >> 8);
   UBRRL = BAUD_REG;
@@ -80,7 +92,11 @@ void InitUart(void)
   UCSRB |= (1 << RXCIE);                 //RX ISR enable
 }
 
-// przerwanie od sterowania zalaczania silnika 10 ms
+/*
+ *******************************************************************************
+ * Inicjalizacja Timer0 do sterowania silnikiem, 10 ms CTC/presc. 1024.
+ *******************************************************************************
+ */
 void InitTimer0(void)
 {
   // ISR execute period 10 ms / interrupt /  CTC   // f CTC = fio/(presc*(1+OCR)
@@ -90,7 +106,11 @@ void InitTimer0(void)
   OCR0 = 77;
 }
 
-// przerwanie do obslugi klawisza, oraz mierzenia odpowiedzi
+/*
+ *******************************************************************************
+ * Inicjalizacja Timer2 do obslugi stanow oraz przycisku, 0,2 ms CTC/presc. 8.
+ *******************************************************************************
+ */
 void InitTimer2(void)
 {
   OCR2 = 199;  // F_CPU 8MHz przerwanie co 0,2ms f CTC = fio/(presc*(1+OCR))
@@ -99,7 +119,11 @@ void InitTimer2(void)
   TIMSK |= (1 << OCIE2);              //CTC timer2 isr enable
 }
 
-// przerwanie od budzenia z uc
+/*
+ *******************************************************************************
+ * Inicjalizacja External Interrupt 0 do wybudzania MCU. Stan niski na PD2.
+ *******************************************************************************
+ */
 void InitExternalInterupt1(void)
 {
   // level interrupt INT0 (low level)
@@ -107,7 +131,12 @@ void InitExternalInterupt1(void)
   GICR  |= INT0; // interrupt na zdarzenie na wejsciu INT1
 }
 
-// adc do losowania liczb
+/*
+ *******************************************************************************
+ * Inicjalizacja przetwornika do losowania zmiennych. ADC0, prescaler 64,
+ * odniesienia na AVCC.
+ *******************************************************************************
+ */
 void InitAdc(void)
 {
   ADMUX |= (1 << REFS0);  //drifting pin lepiej na AREFie bez niczego
@@ -116,7 +145,11 @@ void InitAdc(void)
   // ADC ENABLE/start conversion/autotriger EN/interrupt execute EN/ presk 64  f_adc=8MHz/64=125kHz
 }
 
-// funkcja do inicjalizacji we/wy
+/*
+ *******************************************************************************
+ * Inicjalizacja wejsc/wyjsc MCU. Tutaj ustawiam LEDy i stan poczatkowy appki.
+ *******************************************************************************
+ */
 void InitIO(void)
 {
   STATE_LED_DIR = 1;
@@ -131,28 +164,13 @@ void InitIO(void)
   ADC_PIN_PULLUP = 0; // bez pullupu, niech dryfuje
 
   device_state = ST_POWER_DWN;
-
-// to co ma sie zrobic przed petla glowna
-#if DEBUG_STATE == _ON
-//  PutSInt32ToSerial(-10, TRUE, 15);
-//  StrToSerial("\n");
-//  PutSInt32ToSerial(123112L, TRUE, 15);
-//  StrToSerial("\n");
-//  PutUInt16ToSerial(random_values_grouped[0], FALSE, 8);
-//  StrToSerial("\n");
-//  PutUInt16ToSerial(random_values_grouped[1], FALSE, 8);
-//  StrToSerial("\n");
-//  PutUInt16ToSerial(random_values_grouped[2], FALSE, 8);
-//  StrToSerial("\n");
-//  PutUInt16ToSerial(random_values_grouped[3], FALSE, 8);
-//  StrToSerial("\n");
-//  PutUInt16ToSerial(random_values_grouped[4], FALSE, 8);
-#endif
 }
 
-// isr to debounce key and measure feedback
-//ISR 0,2ms
-// keycnt 200 then 0,2 * 200 = 40ms
+/*
+ *******************************************************************************
+ *  Przerwanie Timer2 do obslugi klawisza i calej maszyny stanow aplikacji.
+ *******************************************************************************
+ */
 ISR(TIMER2_COMP_vect)
 {
   static uint8  keyr = 0;

@@ -8,10 +8,17 @@
 #include <avr/interrupt.h>
 #include "random.h"
 
+// temporary values.
 volatile uint16 random_values_grouped[NUM_ACTIONS] = {5000, 5000, 5000, 5000, 5000};
 volatile uchar change_random = 0;
 
-//ISR to turn on motor  co 10ms
+/*
+ *******************************************************************************
+ * Obsluga silnika tj. zalczania go oraz wylaczania zaleznie od losowych
+ * wartosci wylosowanych z przetwornika ADC. Przerwanie co 10 ms. Dodatkowo do
+ * wzbudzania silnika wymagany jest PWM.
+ *******************************************************************************
+ */
 ISR(TIMER0_COMP_vect)
 {
   // roznica wartosci w tablicy random_values o 1 stanowi roznice w czasie o 500 ms
@@ -57,7 +64,12 @@ ISR(TIMER0_COMP_vect)
 
 }
 
-//getting random variables
+/*
+ *******************************************************************************
+ * Przerwanie odpowiedzialne za wylosowanie probek, zeby co interakcje dostac
+ * inna sekwencje. Przetwonik jest wylaczany gdy nie jest potrzebny.
+ *******************************************************************************
+ */
 ISR(ADC_vect)
 {
   static uint8_t rnd_idx = 0;
@@ -84,7 +96,6 @@ ISR(ADC_vect)
       StrToSerial("wylosowalem, wibruje\n");
       #endif
     }
-
   }
 }
 

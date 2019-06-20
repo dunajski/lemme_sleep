@@ -8,7 +8,11 @@
 #include "random.h"
 #include "energy.h"
 
-// przerawanie od externala do wybudzania micro
+/*
+ *******************************************************************************
+ * Przerwanie od wybudzania MCU pzyciskiem.
+ *******************************************************************************
+ */
 ISR(INT0_vect)
 {
   // disable external interrupt here, in case the external low pulse is too long

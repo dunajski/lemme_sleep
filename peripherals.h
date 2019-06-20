@@ -62,12 +62,56 @@ typedef struct PortDBits
 #define MOTOR_ON   (MOTOR_OUT=1)
 #define MOTOR_OFF  (MOTOR_OUT=0)
 
-void InitUart(void);
+/*
+ *******************************************************************************
+ * Inicjuje UART, 9600/8N1. Komunikacja na przerwaniach.
+ *******************************************************************************
+ */
+void InitUsart(void);
+
+/*
+ *******************************************************************************
+ * Inicjalizacja Timer0 do sterowania silnikiem, 10 ms CTC/presc. 1024.
+ *******************************************************************************
+ */
 void InitTimer0(void);
+
+/*
+ *******************************************************************************
+ * Inicjalizacja Timer2 do obslugi stanow oraz przycisku, 0,2 ms CTC/presc. 8.
+ *******************************************************************************
+ */
 void InitTimer2(void);
+
+/*
+ *******************************************************************************
+ * Inicjalizacja przetwornika do losowania zmiennych. ADC0, prescaler 64,
+ * odniesienia na AVCC.
+ *******************************************************************************
+ */
 void InitAdc(void);
+
+/*
+ *******************************************************************************
+ * Inicjalizacja wejsc/wyjsc MCU. Tutaj ustawiam LEDy i stan poczatkowy appki.
+ *******************************************************************************
+ */
 void InitIO(void);
+
+/*
+ *******************************************************************************
+ * Przeprowadza procedure usypiania MCU, wylaczajac przerwania od wszystkich
+ * peryferiow oprocz przerwania zewnetrznego. Nastepnie po przebudzeniu
+ * przywraca wszystkie przerwania od peryferiow.
+ *******************************************************************************
+ */
 void GoToSleep(void);
+
+/*
+ *******************************************************************************
+ * Inicjalizacja External Interrupt 0 do wybudzania MCU. Stan niski na PD2.
+ *******************************************************************************
+ */
 void InitExternalInterupt1(void);
 
 #endif /* PERIPHERALS_H_ */

@@ -17,8 +17,14 @@
 #define _SINT32_MAX_ASCII_DIGITS 11 // maks moze byc 10, ale dodaje w buforze jedno miejsce na '-'
 
 static uint8 ConvertUInt16ToAscii(uint16 value, uchar * buffer, uchar leading_zeros, uchar size);
-static uint8 ConverUInt32ToAscii(int32 value, uchar * buffer, uchar leading_zeros, uchar size);
+static uint8 ConverUInt32ToAscii(uint32 value, uchar * buffer, uchar leading_zeros, uchar size);
 
+/*
+ *******************************************************************************
+ * Umozliwia wyslanie zmiennej o wielkosci 8b w postaci ASCII.
+ * [in] uint8 integer - wartosc liczbowa do wyslania.
+ *******************************************************************************
+ */
 void PutUInt8ToSerial(uint8 integer)
 {
   if (integer >= 100)
@@ -29,6 +35,15 @@ void PutUInt8ToSerial(uint8 integer)
   PutToSerial(integer % 10 + '0');
 }
 
+/*
+ *******************************************************************************
+ * Umozliwia wyslanie zmiennej o wielkosci 16b w postaci ASCII.
+ * [in] uint16 value - wartosc liczbowa do wyslania,
+ * [in] uchar leading_zeros - umozliwia wyslanie zer poprzedzajacych,
+ * [in] uchar size - ilosc znakow do wyslania,
+ * [out] uint8 - ilosc wyslanych znakow.
+ *******************************************************************************
+ */
 void PutUInt16ToSerial(uint16 value, uchar leading_zeros, uchar size)
 {
   uint8 how_many_digits = 0;
@@ -42,6 +57,15 @@ void PutUInt16ToSerial(uint16 value, uchar leading_zeros, uchar size)
   }
 }
 
+/*
+ *******************************************************************************
+ * Umozliwia wyslanie zmiennej ze znakiem o wielkosci 32b w postaci ASCII.
+ * [in] uint32 value - wartosc liczbowa do wyslania,
+ * [in] uchar leading_zeros - umozliwia wyslanie zer poprzedzajacych,
+ * [in] uchar size - ilosc znakow do wyslania,
+ * [out] uint8 - ilosc wyslanych znakow.
+ *******************************************************************************
+ */
 void PutSInt32ToSerial(int32 value, uchar leading_zeros, uchar size)
 {
   uint8 how_many_digits = 0;
@@ -55,7 +79,7 @@ void PutSInt32ToSerial(int32 value, uchar leading_zeros, uchar size)
     i++;
   }
 
-  how_many_digits = ConverUInt32ToAscii(value, ascii, leading_zeros, size);
+  how_many_digits = ConverUInt32ToAscii((uint32)value, ascii, leading_zeros, size);
 
   for (; i < how_many_digits; i++)
   {
@@ -63,6 +87,16 @@ void PutSInt32ToSerial(int32 value, uchar leading_zeros, uchar size)
   }
 }
 
+/*
+ *******************************************************************************
+ * Umozliwia konwersje zmiennej o wielkosci 16b do postaci ASCII.
+ * [in] uint16 value - wartosc liczbowa do wyslania,
+ * [in] uchar * buffer - bufor na znaki do wyslania,
+ * [in] uchar leading_zeros - umozliwia wyslanie zer poprzedzajacych,
+ * [in] uchar size - ilosc znakow do wyslania,
+ * [out] uint8 - ilosc wyslanych znakow.
+ *******************************************************************************
+ */
 static uint8 ConvertUInt16ToAscii(uint16 value, uchar * buffer, uchar leading_zeros, uchar size)
 {
   uint8 length = 0;
@@ -89,7 +123,17 @@ static uint8 ConvertUInt16ToAscii(uint16 value, uchar * buffer, uchar leading_ze
   return leading_zeros ? size : length;
 }
 
-static uint8 ConverUInt32ToAscii(int32 value, uchar * buffer, uchar leading_zeros, uchar size)
+/*
+ *******************************************************************************
+ * Umozliwia konwersje zmiennej o wielkosci 32b do postaci ASCII.
+ * [in] uint32 value - wartosc liczbowa do wyslania,
+ * [in] uchar * buffer - bufor na znaki do wyslania,
+ * [in] uchar leading_zeros - umozliwia wyslanie zer poprzedzajacych,
+ * [in] uchar size - ilosc znakow do wyslania,
+ * [out] uint8 - ilosc wyslanych znakow.
+ *******************************************************************************
+ */
+static uint8 ConverUInt32ToAscii(uint32 value, uchar * buffer, uchar leading_zeros, uchar size)
 {
   uint8 length = 0;
   uint8 ascii[_SINT32_MAX_ASCII_DIGITS]; // 1 for '-' if needed
@@ -125,6 +169,11 @@ struct
 InputFifo = {0, 0},
 OutputFifo = {0, 0};
 
+/*
+ *******************************************************************************
+ * Przerwanie umieszcza odebrane dane w buforze odbiorczym.
+ *******************************************************************************
+ */
 ISR(USART_RXC_vect) /*VECTOR(11), USART, RxComplete*/
 {
   InputFifo.buff[InputFifo.wi++] = UDR;  //umieszczenie danej w kolejce
@@ -132,8 +181,12 @@ ISR(USART_RXC_vect) /*VECTOR(11), USART, RxComplete*/
     InputFifo.wi = 0;
 }
 
-// zwraca: 0 -gdy bufor odbiornika pusty
-// 1 -gdy pobrany znak umieszczony w '*p_dada'
+/*
+ *******************************************************************************
+ * Umozliwia umieszczanie danych z bufora pod wskazany adres.
+ * [in] uchar * p_dada - adres do zapisu znakow z bufora odbiorczego.
+ *******************************************************************************
+ */
 uchar GetFromSerial(uchar * p_dada)
 {
   if (InputFifo.ri == InputFifo.wi)
@@ -147,6 +200,13 @@ uchar GetFromSerial(uchar * p_dada)
   }
 }
 
+/*
+ *******************************************************************************
+ * Przerwanie obslugujace nadawanie przy uzyciu USART. Wysyla znaki tak dlugo
+ * jak ma zapelniony bufor. Gdy bufor sie zwolni oczekuje na wlaczenie
+ * przerwania po wrzuceniu danych do wyslania do bufora.
+ *******************************************************************************
+ */
 ISR(USART_UDRE_vect) /*VECTOR(12), USART Data Register Empty*/
 {
   if (OutputFifo.wi == OutputFifo.ri)
@@ -161,6 +221,13 @@ ISR(USART_UDRE_vect) /*VECTOR(12), USART Data Register Empty*/
   }
 }
 
+/*
+ *******************************************************************************
+ * Umozliwia umieszczenie w buforze nadawczym jednego znaku po, umieszczeniu
+ * uruchamia przerwania od wysylania.
+ * [in] uchar data - znak do wyslania.
+ *******************************************************************************
+ */
 void PutToSerial(uchar data)
 {
   OutputFifo.buff[OutputFifo.wi++] = data;
@@ -170,7 +237,13 @@ void PutToSerial(uchar data)
   UCSRB |= (1 << UDRIE);  // wlaczenie przerwan
 }
 
-void StrToSerial(char *msg)
+/*
+ *******************************************************************************
+ * Umozliwia umieszczenie w buforze nadawczym lancucha znakowego.
+ * [in] char * msg - lancuch znakow, do wyslania.
+ *******************************************************************************
+ */
+void StrToSerial(char * msg)
 {
   while (*msg != 0)
     PutToSerial(*msg++);
