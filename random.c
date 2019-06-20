@@ -35,12 +35,12 @@ ISR(TIMER0_COMP_vect)
     if (!(rnd_val_gr_idx % 2))
     {
       DEBUG_LED_ON;
-      MOTOR_ON;
+      //MOTOR_ON;
     }
     else
     {
       DEBUG_LED_OFF;
-      MOTOR_OFF;
+      //MOTOR_OFF;
     }
 
     rnd_val_cnt++;

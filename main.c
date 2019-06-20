@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
 
 #include "communication.h"
 #include "peripherals.h"
@@ -18,11 +19,12 @@ int main(void)
   InitTimer0();
   InitTimer2();
   InitIO();
+  InitExternalInterupt1();
   sei();
   while (1)
   {
     // zaczynamy od pojscia spac i oczekujemy wybudzenia trzykrotnym nacisnieciem dzwigni
-    if(device_state == ST_IDLE)
+    if(device_state == ST_POWER_DWN)
       GoToSleep();
   }
 

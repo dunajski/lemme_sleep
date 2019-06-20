@@ -15,6 +15,9 @@
 
 #define _BREAK_TIME_S(x) (10000UL*x)
 
+#define WAKE_UP_MAX_TIME (50000UL) // 0,2 ms * 50 000 = 10 sekund
+#define PRESS_TO_WAKE_UP_COUNT (3)
+
 #define TRUE (1)
 #define FALSE (0)
 
@@ -41,13 +44,30 @@ typedef enum KeySubState
 
 void GoToSleep(void)
 {
+  // enable external interrupt
+  GICR |= (1 << INT0);
+  // set sleep mode
+  set_sleep_mode(SLEEP_MODE_IDLE);
+
+  // wylaczenie przerwanod innych peryferiow tylko intem mozna wlaczyc
+  TIMSK  &= ~(1 << OCIE0);
+  TIMSK  &= ~(1 << OCIE2);
+  ADCSRA &= ~(1 << ADIE);
+  UCSRB  &= ~(1 << RXCIE);
+  UCSRB  &= ~(1 << UDRIE);  // wlaczenie przerwan
+  // sleep_mode() has a possible race condition
   sei(); // just in case someone didnt enable interrupts and mcu gonna sleep forever
-  #if DEBUG_STATE == _ON
-  DEBUG_LED_ON;
-  StrToSerial("Idem spac\n");
-  #endif
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-  sleep_mode(); // usypia proca
+  sleep_enable();
+  sleep_cpu();
+  sleep_disable();
+
+  // znowu uzywamy przerwan ;>
+  TIMSK |= (1 << OCIE0);
+  TIMSK |= (1 << OCIE2);
+  ADCSRA |= (1 << ADIE);
+  UCSRB |= (1 << RXCIE);
+  UCSRB |= (1 << UDRIE);  // wlaczenie przerwan
+  sei();
 }
 
 void InitUart(void)
@@ -60,6 +80,7 @@ void InitUart(void)
   UCSRB |= (1 << RXCIE);                 //RX ISR enable
 }
 
+// przerwanie od sterowania zalaczania silnika 10 ms
 void InitTimer0(void)
 {
   // ISR execute period 10 ms / interrupt /  CTC   // f CTC = fio/(presc*(1+OCR)
@@ -69,6 +90,7 @@ void InitTimer0(void)
   OCR0 = 77;
 }
 
+// przerwanie do obslugi klawisza, oraz mierzenia odpowiedzi
 void InitTimer2(void)
 {
   OCR2 = 199;  // F_CPU 8MHz przerwanie co 0,2ms f CTC = fio/(presc*(1+OCR))
@@ -77,6 +99,15 @@ void InitTimer2(void)
   TIMSK |= (1 << OCIE2);              //CTC timer2 isr enable
 }
 
+// przerwanie od budzenia z uc
+void InitExternalInterupt1(void)
+{
+  // level interrupt INT0 (low level)
+  MCUCR &= ~((1 << ISC01) | (1 << ISC00));
+  GICR  |= INT0; // interrupt na zdarzenie na wejsciu INT1
+}
+
+// adc do losowania liczb
 void InitAdc(void)
 {
   ADMUX |= (1 << REFS0);  //drifting pin lepiej na AREFie bez niczego
@@ -85,6 +116,7 @@ void InitAdc(void)
   // ADC ENABLE/start conversion/autotriger EN/interrupt execute EN/ presk 64  f_adc=8MHz/64=125kHz
 }
 
+// funkcja do inicjalizacji we/wy
 void InitIO(void)
 {
   STATE_LED_DIR = 1;
@@ -98,23 +130,23 @@ void InitIO(void)
   ADC_PIN_DIR    = 0; // wejscie
   ADC_PIN_PULLUP = 0; // bez pullupu, niech dryfuje
 
-  device_state = ST_IDLE;
+  device_state = ST_POWER_DWN;
 
 // to co ma sie zrobic przed petla glowna
 #if DEBUG_STATE == _ON
-  PutSInt32ToSerial(-10, TRUE, 15);
-  StrToSerial("\n");
-  PutSInt32ToSerial(123112L, TRUE, 15);
-  StrToSerial("\n");
-  PutUInt16ToSerial(random_values_grouped[0], FALSE, 8);
-  StrToSerial("\n");
-  PutUInt16ToSerial(random_values_grouped[1], FALSE, 8);
-  StrToSerial("\n");
-  PutUInt16ToSerial(random_values_grouped[2], FALSE, 8);
-  StrToSerial("\n");
-  PutUInt16ToSerial(random_values_grouped[3], FALSE, 8);
-  StrToSerial("\n");
-  PutUInt16ToSerial(random_values_grouped[4], FALSE, 8);
+//  PutSInt32ToSerial(-10, TRUE, 15);
+//  StrToSerial("\n");
+//  PutSInt32ToSerial(123112L, TRUE, 15);
+//  StrToSerial("\n");
+//  PutUInt16ToSerial(random_values_grouped[0], FALSE, 8);
+//  StrToSerial("\n");
+//  PutUInt16ToSerial(random_values_grouped[1], FALSE, 8);
+//  StrToSerial("\n");
+//  PutUInt16ToSerial(random_values_grouped[2], FALSE, 8);
+//  StrToSerial("\n");
+//  PutUInt16ToSerial(random_values_grouped[3], FALSE, 8);
+//  StrToSerial("\n");
+//  PutUInt16ToSerial(random_values_grouped[4], FALSE, 8);
 #endif
 }
 
@@ -131,8 +163,29 @@ ISR(TIMER2_COMP_vect)
   static uint16 keycnt = 0;
   static uint16 keycnt2 = 0;
   static uint16 button_state_time = 0; // powinnien 16 bitowy wystarczyc 0,4 ms x 0xFFFF = ~26 s
+  static uint16 wake_up_timer = 0;
+  static uint8 wake_up_cnt = 0;
 //  static uint16 change_random_cnt = 0;
 //  static uint8 activity_rate;
+
+  if (device_state != ST_WAIT_TO_WAKE_UP)
+    wake_up_timer = 0;
+  else
+    wake_up_timer++;
+
+  if (wake_up_timer >= WAKE_UP_MAX_TIME)
+  {
+    // enable external interrupt
+    GICR |= (1 << INT0);
+    STATE_LED_TOGGLE;
+    device_state = ST_POWER_DWN;
+  }
+
+  if (wake_up_cnt >= PRESS_TO_WAKE_UP_COUNT)
+  {
+    device_state = ST_LOSOWANIE;
+    wake_up_cnt = 0;
+  }
 
   if (device_state == ST_LOSOWANIE && change_random == 0)
   {
@@ -160,14 +213,18 @@ ISR(TIMER2_COMP_vect)
 
           switch (device_state)
           {
-            case ST_IDLE:
-              // w przerwaniu od INT1, dodaj jakiegos statica 3 razy
+            case ST_POWER_DWN:
             break;
             case ST_WIBROWANIE:
               // w trakcie wibrowania nie obchodzi nas czy ktos klika
             break;
             case ST_INTERAKCJA:
               // odbieranie sekwencji od uzytkownika
+            break;
+            case ST_WAIT_TO_WAKE_UP:
+              STATE_LED_TOGGLE;
+              wake_up_cnt++;
+              keylev = 2;
             break;
             case ST_OCENA:
             case ST_LOSOWANIE:
@@ -291,10 +348,9 @@ ISR(TIMER2_COMP_vect)
       if(index == 0)
       {
         button_state_time = 0;
-        keycnt2 = _BREAK_TIME_S(2);  // przerwa 2 s tak ad hoc min miedzy kolejnymi interakcjami
         hnr_time_ptr -= NUM_ACTIONS;
         #if DEBUG_STATE == _ON
-        StrToSerial("Interakcja nr:");
+        StrToSerial("Idasnterakcja nr:");
         how_many_times_sent++;
         PutUInt8ToSerial(how_many_times_sent);
         StrToSerial("\n");
@@ -344,12 +400,9 @@ ISR(TIMER2_COMP_vect)
     #if DEBUG_STATE == _ON
     StrToSerial("dzis nie oceniam, ide spac\n");
     #endif
-    device_state = ST_IDLE;
+    device_state = ST_POWER_DWN;
   }
 
-  // debounce, zeby nie dalo sie spamowac w przerwanie zewnetrznym
-  if(debounce_idle_delay > 0)
-    debounce_idle_delay--;
 }
 
 //// function to estimate activity of user of device

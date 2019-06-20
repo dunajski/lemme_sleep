@@ -26,9 +26,9 @@ typedef struct PortABits
 
 typedef struct PortDBits
 {
-  volatile uchar :3;            // PD 0-2
-  volatile uchar action_key:1;  // PD 3
-  volatile uchar :4;            // PA 4-7
+  volatile uchar :2;            // PD 0-1
+  volatile uchar action_key:1;  // PD 2
+  volatile uchar :5;            // PA 3-7
 } TPortDBits;
 
 #define STATE_LED_VAL ((TPortABits *)&PINA)->state_led
@@ -43,9 +43,9 @@ typedef struct PortDBits
 #define MOTOR_DIR ((TPortABits *)&DDRA)->motor
 #define MOTOR_OUT ((TPortABits *)&PORTA)->motor
 
-#define ACTION_KEY_VAL    ((TPortDBits *)&PINA)->action_key
-#define ACTION_KEY_DIR    ((TPortDBits *)&DDRA)->action_key
-#define ACTION_KEY_PULLUP ((TPortDBits *)&PORTA)->action_key
+#define ACTION_KEY_VAL    ((TPortDBits *)&PIND)->action_key
+#define ACTION_KEY_DIR    ((TPortDBits *)&DDRD)->action_key
+#define ACTION_KEY_PULLUP ((TPortDBits *)&PORTD)->action_key
 
 #define ADC_PIN_VAL     ((TPortABits *)&PINA)->adc_pin
 #define ADC_PIN_DIR     ((TPortABits *)&DDRA)->adc_pin
@@ -53,6 +53,11 @@ typedef struct PortDBits
 
 #define DEBUG_LED_ON   (DEBUG_LED_OUT=1)
 #define DEBUG_LED_OFF  (DEBUG_LED_OUT=0)
+#define DEBUG_LED_TOGGLE  (DEBUG_LED_OUT=(!DEBUG_LED_OUT))
+
+#define STATE_LED_ON   (STATE_LED_OUT=1)
+#define STATE_LED_OFF  (STATE_LED_OUT=0)
+#define STATE_LED_TOGGLE  (STATE_LED_OUT=(!STATE_LED_OUT))
 
 #define MOTOR_ON   (MOTOR_OUT=1)
 #define MOTOR_OFF  (MOTOR_OUT=0)
@@ -63,5 +68,6 @@ void InitTimer2(void);
 void InitAdc(void);
 void InitIO(void);
 void GoToSleep(void);
+void InitExternalInterupt1(void);
 
 #endif /* PERIPHERALS_H_ */
