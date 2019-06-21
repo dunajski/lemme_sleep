@@ -46,7 +46,7 @@ void PutSInt32ToSerial(int32 value, uchar leading_zeros, uchar size);
 
 /*
  *******************************************************************************
- * Umozliwia umieszczenie w buforze nadawczym jednego znaku po, umieszczeniu
+ * Umozliwia umieszczenie w buforze nadawczym jednego znaku, po umieszczeniu
  * uruchamia przerwania od wysylania.
  * [in] uchar data - znak do wyslania.
  *******************************************************************************

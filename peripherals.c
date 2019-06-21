@@ -48,6 +48,8 @@ void GoToSleep(void)
   UCSRB  &= ~(1 << RXCIE);
   UCSRB  &= ~(1 << UDRIE);
 
+  STATE_LED_ON;
+
   // Zezwol na przerwanie od EXT0 zeby moc wybudzic
   GICR |= (1 << INT0);
   sei();
@@ -60,6 +62,7 @@ void GoToSleep(void)
   sleep_cpu();
   sleep_disable();
 
+  STATE_LED_OFF;
   // Nastepuje wybudzenie, czas normalnej pracy, a wiec potrzebujemy tych
   // wszystkich przerwan
   TIMSK  |= (1 << OCIE0);
@@ -166,7 +169,7 @@ void InitIOs(void)
 
 #define WAKE_UP_MAX_TIME (50000UL) // 0,2 ms * 50 000 = 10 sekund
 #define PRESS_TO_WAKE_UP_COUNT (3)
-#define ISR_DEBOUNCE_CNT 200 // 200 * 0,2 ms = 40 ms
+#define ISR_DEBOUNCE_CNT 400 // 200 * 0,2 ms = 40 ms
 
 /*
  *******************************************************************************
@@ -217,7 +220,6 @@ ISR(TIMER2_COMP_vect)
           switch (device_state)
           {
             case ST_WAIT_TO_WAKE_UP:
-              STATE_LED_TOGGLE;
               wake_up_cnt++;
               keylev = 2;
             break;
@@ -255,7 +257,8 @@ ISR(TIMER2_COMP_vect)
   {
     if (wake_up_timer >= WAKE_UP_MAX_TIME)
     {
-      STATE_LED_TOGGLE;
+      wake_up_timer = 0;
+      wake_up_cnt = 0;
       device_state = ST_POWER_DWN;
     }
 
@@ -284,10 +287,9 @@ ISR(TIMER2_COMP_vect)
 
     if (!keycnt2 && (saved_states < NUM_ACTIONS))
     {
-
       // aby rozpoczac mierzenie hold and release musi byc stan init, zeby mozna bylo rozpoczac
       // mierzenie od wcisniecia, a wiec oczekuje na wcisniecie przycisku
-      if ((key_state_interakcja == INITIAL_KEY_STATE) && !(ACTION_KEY_VAL))
+      if ((key_state_interakcja == INITIAL_KEY_STATE) && (!(ACTION_KEY_VAL)))
       {
         // debouncing wcisnieto przycisk
         keycnt2 = ISR_DEBOUNCE_CNT;
@@ -382,7 +384,7 @@ ISR(TIMER2_COMP_vect)
         button_state_time = 0;
         hnr_time_ptr -= NUM_ACTIONS;
         #if DEBUG_STATE == _ON
-        StrToSerial("Idasnterakcja nr:");
+        StrToSerial("Interakcja nr:");
         how_many_times_sent++;
         PutUInt8ToSerial(how_many_times_sent);
         StrToSerial("\n");
@@ -428,13 +430,19 @@ ISR(TIMER2_COMP_vect)
   if (device_state == ST_OCENA)
   {
     goto_sleep_delay++;
-    if (goto_sleep_delay >= 2500)
+    if (goto_sleep_delay == 10)
     {
       activity_rate = EstimateActivity(holdandreleasetime, random_values, activity_rate);
       #if DEBUG_STATE == _ON
+      StrToSerial("Aktualna aktywnosc:");
       PutUInt8ToSerial(activity_rate);
-      StrToSerial(" aktywnosc\ndzis nie oceniam, ide spac\n");
+      StrToSerial("\nOcena niezaimplementowana, usypianie\n");
       #endif
+    }
+
+    // opoznij przejscie o 2,5 s zeby wszystko sie wyslalo
+    if (goto_sleep_delay >= 5000)
+    {
       goto_sleep_delay = 0;
       device_state = ST_POWER_DWN;
     }
@@ -443,7 +451,18 @@ ISR(TIMER2_COMP_vect)
 
 }
 
-// function to estimate activity of user of device
+// TODO: ponizsze do zrobienia
+/*
+ *******************************************************************************
+ * Ocenia aktywnosc uzytkownika na podstawe roznic pomiedzy interakcja, losowa
+ * probka z przetwornika i poprzednia aktywnoscia. Po wyliczeniu,
+ * czyscic obie tablice.
+ * [in] uint16[] hnr_time - wskaznik na tablice z wynikami hold and release
+ * [in] uint16[] rnd_values - wskaznik na tablice z wynikami losowania
+ * [in] uint8 current_activity - aktywnosc z uwzglednieniem poprzednich akcji
+ * [out] uint8 - estymowana aktywnosc
+ *******************************************************************************
+ */
 static uint8 EstimateActivity(volatile uint16 hnr_time[], volatile uchar rnd_values[], uint8 current_activity)
 {
   // there is a measure time of interaction and ive got random time

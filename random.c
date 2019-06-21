@@ -57,7 +57,7 @@ ISR(TIMER0_COMP_vect)
       rnd_val_gr_idx = 0;
       device_state = ST_INTERAKCJA;
       #if DEBUG_STATE == _ON
-      StrToSerial("No to powtarzaj, come on\n");
+      StrToSerial("Wylosowano i nadano, mozesz powtarzac\n");
       #endif
     }
   }
@@ -93,7 +93,7 @@ ISR(ADC_vect)
       TurnADCOff;
       device_state = ST_WIBROWANIE;
       #if DEBUG_STATE == _ON
-      StrToSerial("wylosowalem, wibruje\n");
+      StrToSerial("Wylosowano probki, nadaje sekwencje\n");
       #endif
     }
   }

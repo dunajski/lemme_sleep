@@ -8,9 +8,6 @@
 #include <string.h>
 #include "communication.h"
 
-#define FIFO_LEN 128 // dlugosc kolejek FIFO
-
-
 static uint8 ConvertUInt16ToAscii(uint16 value, uchar * buffer, uchar leading_zeros, uchar size);
 static uint8 ConverUInt32ToAscii(uint32 value, uchar * buffer, uchar leading_zeros, uchar size);
 
@@ -158,6 +155,8 @@ static uint8 ConverUInt32ToAscii(uint32 value, uchar * buffer, uchar leading_zer
   return leading_zeros ? size : length;
 }
 
+#define FIFO_LEN 256 // dlugosc kolejek FIFO
+
 struct
 {
   uchar wi;  //indeks odczytu
@@ -221,7 +220,7 @@ ISR(USART_UDRE_vect) /*VECTOR(12), USART Data Register Empty*/
 
 /*
  *******************************************************************************
- * Umozliwia umieszczenie w buforze nadawczym jednego znaku po, umieszczeniu
+ * Umozliwia umieszczenie w buforze nadawczym jednego znaku, po umieszczeniu
  * uruchamia przerwania od wysylania.
  * [in] uchar data - znak do wyslania.
  *******************************************************************************
