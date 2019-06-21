@@ -21,7 +21,7 @@
 
 #define _NumItems(array) (sizeof(array)/sizeof(array[0]))
 
-typedef enum DeviceState
+typedef enum
 {
   ST_POWER_DWN = 0,
   ST_WAIT_TO_WAKE_UP,

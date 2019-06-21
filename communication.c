@@ -8,13 +8,8 @@
 #include <string.h>
 #include "communication.h"
 
-#define FIFO_LEN 128 //dlugosc kolejek FIFO
+#define FIFO_LEN 128 // dlugosc kolejek FIFO
 
-#define BAUDRATE 9600L//115200L
-#define BAUD_REG ((F_CPU/(16*BAUDRATE))-1) //dzielnika cz. UBRR
-
-#define _UINT16_MAX_ASCII_DIGITS 5 // maks 65 535
-#define _SINT32_MAX_ASCII_DIGITS 11 // maks moze byc 10, ale dodaje w buforze jedno miejsce na '-'
 
 static uint8 ConvertUInt16ToAscii(uint16 value, uchar * buffer, uchar leading_zeros, uchar size);
 static uint8 ConverUInt32ToAscii(uint32 value, uchar * buffer, uchar leading_zeros, uchar size);
@@ -35,6 +30,7 @@ void PutUInt8ToSerial(uint8 integer)
   PutToSerial(integer % 10 + '0');
 }
 
+#define _UINT16_MAX_ASCII_DIGITS 5 // maks 65 535
 /*
  *******************************************************************************
  * Umozliwia wyslanie zmiennej o wielkosci 16b w postaci ASCII.
@@ -57,6 +53,8 @@ void PutUInt16ToSerial(uint16 value, uchar leading_zeros, uchar size)
   }
 }
 
+// maks moze byc 10, ale dodaje w buforze jedno miejsce na '-'
+#define _SINT32_MAX_ASCII_DIGITS 11
 /*
  *******************************************************************************
  * Umozliwia wyslanie zmiennej ze znakiem o wielkosci 32b w postaci ASCII.

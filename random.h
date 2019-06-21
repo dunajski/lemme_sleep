@@ -13,7 +13,7 @@
 #include "communication.h"
 
 #define NUM_RND     13
-#define NUM_ACTIONS 5
+#define NUM_ACTIONS  5
 
 #define TurnADCOn   ADCSRA|=(1<<ADEN)|(1<<ADSC)
 #define TurnADCOff  ADCSRA&=~(1<<ADEN)
@@ -23,7 +23,7 @@ volatile uchar change_random;
 volatile uchar random_values[NUM_RND];
 volatile uchar device_state;
 
-// w tej tablicy beda sie znajodwac wartosci czasow wibrowania sekwencji
+// w tej tablicy beda sie znajdowac wartosci czasow wibrowania sekwencji
 // pogrupowane ze wzgledu na to ze zostana zsumowane z tablicy random values
 // dla kazdego czasu WIBROWANIA przedzial od 0,5 do 3,5 s oraz
 // dla kazdego czasu PRZERWY przedzial od 0,5 do 1,5 s

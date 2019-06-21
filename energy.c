@@ -15,11 +15,10 @@
  */
 ISR(INT0_vect)
 {
-  // disable external interrupt here, in case the external low pulse is too long
+  // wylacz, zeby przeciwdzialac wielu wywolaniom, po obsludze przerwania
+  // nastepuje uruchomienie wszystkich przerwan oprocz EXT0
   GICR &= ~(1 << INT0);
   // waking up...
   device_state = ST_WAIT_TO_WAKE_UP;
-
-  cli();
 }
 

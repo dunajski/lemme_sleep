@@ -12,8 +12,6 @@
 #include "random.h"
 #include "types.h"
 
-#define ISR_DEBOUNCE_CNT 200
-
 typedef struct PortABits
 {
   volatile uchar adc_pin :1;    // PA 0
@@ -96,7 +94,7 @@ void InitAdc(void);
  * Inicjalizacja wejsc/wyjsc MCU. Tutaj ustawiam LEDy i stan poczatkowy appki.
  *******************************************************************************
  */
-void InitIO(void);
+void InitIOs(void);
 
 /*
  *******************************************************************************

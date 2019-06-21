@@ -18,7 +18,7 @@ int main(void)
   InitAdc();
   InitTimer0();
   InitTimer2();
-  InitIO();
+  InitIOs();
   InitExternalInterupt1();
   sei();
   while (1)

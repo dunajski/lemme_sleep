@@ -13,21 +13,16 @@
 #include "peripherals.h"
 #include "energy.h"
 
-#define _BREAK_TIME_S(x) (10000UL*x)
-
-#define WAKE_UP_MAX_TIME (50000UL) // 0,2 ms * 50 000 = 10 sekund
-#define PRESS_TO_WAKE_UP_COUNT (3)
 
 #define TRUE (1)
 #define FALSE (0)
 
 volatile uint16 * hnr_time_ptr = holdandreleasetime;
-volatile uchar how_many_times_sent = 0;
 
-//static uint8 EstimateActivity(uint16 hnr_time[], uchar rnd_values[], uint8 current_activity);
+static uint8 EstimateActivity(volatile uint16 hnr_time[],volatile uchar rnd_values[], uint8 current_activity);
 
 // stany przycisku podczas odliczania czasu wcisnieta i puszczenia dla stanu ST_INTERAKCJA
-typedef enum KeySubState
+typedef enum
 {
   INITIAL_KEY_STATE = 0,  // stan przed wcisnieciem pierwszym
   BUTTON_NOT_PRESSED,     // stan puszczenia, ale musi uprzednio wystapic choc jedno wcisniecie
@@ -35,12 +30,7 @@ typedef enum KeySubState
   BUTTON_IS_HOLDED,       // stan do naliczania czasu po debounce po wcisnieciu przycisku
   BUTTON_IS_RELEASED      // stan do naliczania czasu po debounce po zwolnieniu przycisku
 
-} TKeySubstates;
-
-#define FIFO_LEN 128  //dlugosc kolejek FIFO
-
-#define BAUDRATE 9600UL  //115200L
-#define BAUD_REG ((F_CPU/(16*BAUDRATE))-1) // freq. divider
+} TKeyInterakcjastates;
 
 /*
  *******************************************************************************
@@ -51,31 +41,37 @@ typedef enum KeySubState
  */
 void GoToSleep(void)
 {
-  // enable external interrupt
-  GICR |= (1 << INT0);
-  // set sleep mode
-  set_sleep_mode(SLEEP_MODE_IDLE);
-
-  // wylaczenie przerwanod innych peryferiow tylko intem mozna wlaczyc
+  // Wylaczenie przerwan od innych peryferiow, zeby moc wybudzac tylko EXT0
   TIMSK  &= ~(1 << OCIE0);
   TIMSK  &= ~(1 << OCIE2);
-  ADCSRA &= ~(1 << ADIE);
+  ADCSRA &= ~(1 <<  ADIE);
   UCSRB  &= ~(1 << RXCIE);
-  UCSRB  &= ~(1 << UDRIE);  // wlaczenie przerwan
-  // sleep_mode() has a possible race condition
-  sei(); // just in case someone didnt enable interrupts and mcu gonna sleep forever
+  UCSRB  &= ~(1 << UDRIE);
+
+  // Zezwol na przerwanie od EXT0 zeby moc wybudzic
+  GICR |= (1 << INT0);
+  sei();
+
+  // Ustaw tryb oszczedzania energii, na ten moment IDLE dla testow ale moga byc
+  // inne. MCU zatrzymuje sie tutaj na sleep_cpu(); i po wybudzeniu kontynuuje
+  // od miejsca sleep_disable();
+  set_sleep_mode(SLEEP_MODE_IDLE);
   sleep_enable();
   sleep_cpu();
   sleep_disable();
 
-  // znowu uzywamy przerwan ;>
-  TIMSK   |= (1 << OCIE0);
-  TIMSK   |= (1 << OCIE2);
-  ADCSRA  |= (1 << ADIE);
-  UCSRB   |= (1 << RXCIE);
-  UCSRB   |= (1 << UDRIE);  // wlaczenie przerwan
+  // Nastepuje wybudzenie, czas normalnej pracy, a wiec potrzebujemy tych
+  // wszystkich przerwan
+  TIMSK  |= (1 << OCIE0);
+  TIMSK  |= (1 << OCIE2);
+  ADCSRA |= (1 <<  ADIE);
+  UCSRB  |= (1 << RXCIE);
+  UCSRB  |= (1 << UDRIE);
   sei();
 }
+
+#define BAUDRATE 9600UL
+#define BAUD_REG ((F_CPU/(16*BAUDRATE))-1)
 
 /*
  *******************************************************************************
@@ -84,12 +80,14 @@ void GoToSleep(void)
  */
 void InitUsart(void)
 {
+  // Baudrate 9600
   UBRRH = (BAUD_REG >> 8);
   UBRRL = BAUD_REG;
-  //Format ramki danych: 8data,1stopbit
+  // Format ramki danych 8N1
+  // URSEL musi byc '1' zeby pisac do UCSRC
   UCSRC |= ((1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1));
-  UCSRB |= ((1 << RXEN) | (1 << TXEN));  // RX/TX enable
-  UCSRB |= (1 << RXCIE);                 //RX ISR enable
+  UCSRB |= ((1 << RXEN) | (1 << TXEN));  // RX/TX na pinach PD0/PD1
+  UCSRB |= (1 << RXCIE);                 // RX ISR enable
 }
 
 /*
@@ -150,10 +148,10 @@ void InitAdc(void)
  * Inicjalizacja wejsc/wyjsc MCU. Tutaj ustawiam LEDy i stan poczatkowy appki.
  *******************************************************************************
  */
-void InitIO(void)
+void InitIOs(void)
 {
-  STATE_LED_DIR = 1;
-  DEBUG_LED_DIR = 1;
+  STATE_LED_DIR = 1; // dioda testowa
+  DEBUG_LED_DIR = 1; // dioda testowa
 
   MOTOR_DIR = 1;
 
@@ -163,54 +161,40 @@ void InitIO(void)
   ADC_PIN_DIR    = 0; // wejscie
   ADC_PIN_PULLUP = 0; // bez pullupu, niech dryfuje
 
-  device_state = ST_POWER_DWN;
+  device_state = ST_POWER_DWN; // ropoczynamy od stanu uspienia
 }
+
+#define WAKE_UP_MAX_TIME (50000UL) // 0,2 ms * 50 000 = 10 sekund
+#define PRESS_TO_WAKE_UP_COUNT (3)
+#define ISR_DEBOUNCE_CNT 200 // 200 * 0,2 ms = 40 ms
 
 /*
  *******************************************************************************
- *  Przerwanie Timer2 do obslugi klawisza i calej maszyny stanow aplikacji.
+ * Przerwanie Timer2 do obslugi klawisza i calej maszyny stanow aplikacji.
  *******************************************************************************
  */
 ISR(TIMER2_COMP_vect)
 {
+  // Obsluga wcisniec przyciskiem
   static uint8  keyr = 0;
-  static uint8  index = 0;
   static uint8  keylev = 0;
+  static uint16 keycnt = 0;
+  // Obsluga wcisniec przyciskiem dla stanu ST_INTERAKCJA
+  static uint8  index = 0;
   static uint8  saved_states = 0;
   static uint8  key_state_interakcja = INITIAL_KEY_STATE;
-  static uint16 keycnt = 0;
   static uint16 keycnt2 = 0;
-  static uint16 button_state_time = 0; // powinnien 16 bitowy wystarczyc 0,4 ms x 0xFFFF = ~26 s
+  static uint16 button_state_time = 0; // 0,2 ms * 0xFFFF = 13 s (max czasu)
+  // Obsluga wybudzania
   static uint16 wake_up_timer = 0;
-  static uint8 wake_up_cnt = 0;
-//  static uint16 change_random_cnt = 0;
-//  static uint8 activity_rate;
+  static uint8  wake_up_cnt = 0;
 
-  if (device_state != ST_WAIT_TO_WAKE_UP)
-    wake_up_timer = 0;
-  else
-    wake_up_timer++;
+  static uint8  how_many_times_sent = 0;
+  static uint8  activity_rate;
 
-  if (wake_up_timer >= WAKE_UP_MAX_TIME)
-  {
-    // enable external interrupt
-    GICR |= (1 << INT0);
-    STATE_LED_TOGGLE;
-    device_state = ST_POWER_DWN;
-  }
+  static uint16 goto_sleep_delay = 0; // test
 
-  if (wake_up_cnt >= PRESS_TO_WAKE_UP_COUNT)
-  {
-    device_state = ST_LOSOWANIE;
-    wake_up_cnt = 0;
-  }
-
-  if (device_state == ST_LOSOWANIE && change_random == 0)
-  {
-    TurnADCOn;
-    change_random = 1;
-  }
-
+  // Obsluga przycisku dla wszystkich stanow
   if (keycnt == 0)
   {
     switch (keylev)
@@ -223,6 +207,7 @@ ISR(TIMER2_COMP_vect)
           keycnt = ISR_DEBOUNCE_CNT;
         }
       break;
+
       case 1: // pressed,debounced
         if (ACTION_KEY_VAL == keyr)
         {
@@ -231,23 +216,21 @@ ISR(TIMER2_COMP_vect)
 
           switch (device_state)
           {
-            case ST_POWER_DWN:
-            break;
-            case ST_WIBROWANIE:
-              // w trakcie wibrowania nie obchodzi nas czy ktos klika
-            break;
-            case ST_INTERAKCJA:
-              // odbieranie sekwencji od uzytkownika
-            break;
             case ST_WAIT_TO_WAKE_UP:
               STATE_LED_TOGGLE;
               wake_up_cnt++;
               keylev = 2;
             break;
+
+            case ST_INTERAKCJA:
+              // odbieranie sekwencji od uzytkownika w inny miejscu
+            break;
+
+            case ST_POWER_DWN:
+            case ST_WIBROWANIE: // w trakcie wibrowania nie obchodzi nas czy ktos klika
             case ST_OCENA:
             case ST_LOSOWANIE:
             default:
-              // do nothing
             break;
           }
         }
@@ -255,6 +238,7 @@ ISR(TIMER2_COMP_vect)
         else
           keylev = 0;
       break;
+
       case 2:
         if (ACTION_KEY_VAL == 1)
           keylev = 0;
@@ -264,7 +248,37 @@ ISR(TIMER2_COMP_vect)
 
   if (keycnt > 0)
     keycnt--;
+  //============================================================================
 
+  // Obsluga stanu ST_WAIT_TO_WAKE_UP po wybudzeniu
+  if (device_state == ST_WAIT_TO_WAKE_UP)
+  {
+    if (wake_up_timer >= WAKE_UP_MAX_TIME)
+    {
+      STATE_LED_TOGGLE;
+      device_state = ST_POWER_DWN;
+    }
+
+    if (wake_up_cnt >= PRESS_TO_WAKE_UP_COUNT)
+    {
+      wake_up_cnt = 0;
+      device_state = ST_LOSOWANIE;
+    }
+
+    wake_up_timer++;
+  }
+  //============================================================================
+
+
+  // Obsluga stanu LOSOWANIE jesli poprwanie wybudzono i przed kazda interakcja
+  if (device_state == ST_LOSOWANIE && change_random == 0)
+  {
+    TurnADCOn;
+    change_random = 1;
+  }
+  //============================================================================
+
+  // Obsluga stanu INTERAKCJA po wylosowaniu i wibrowaniu silnika
   if (device_state == ST_INTERAKCJA)
   {
 
@@ -408,26 +422,32 @@ ISR(TIMER2_COMP_vect)
 
   if (keycnt2 > 0)
     keycnt2--;
+  //============================================================================
 
-  if(device_state == ST_OCENA)
+  // Obsluga stanu INTERAKCJA po wylosowaniu i wibrowaniu silnika
+  if (device_state == ST_OCENA)
   {
-//    activity_rate = EstimateActivity(holdandreleasetime, random_values, activity_rate);
-    // TODO activity rate ustala czy losujemy czy idle, ale na razie testy czy smooth przechodzi
-    // przez state'y tj. wybudz sie, wylosuj, zamigaj/wibruj, oczekuj odpowiedzi, z oceny przejdz
-    // znowu do idle'a
-    #if DEBUG_STATE == _ON
-    StrToSerial("dzis nie oceniam, ide spac\n");
-    #endif
-    device_state = ST_POWER_DWN;
+    goto_sleep_delay++;
+    if (goto_sleep_delay >= 2500)
+    {
+      activity_rate = EstimateActivity(holdandreleasetime, random_values, activity_rate);
+      #if DEBUG_STATE == _ON
+      PutUInt8ToSerial(activity_rate);
+      StrToSerial(" aktywnosc\ndzis nie oceniam, ide spac\n");
+      #endif
+      goto_sleep_delay = 0;
+      device_state = ST_POWER_DWN;
+    }
   }
+  //============================================================================
 
 }
 
-//// function to estimate activity of user of device
-//static uint8 EstimateActivity(uint16 hnr_time[], uchar rnd_values[], uint8 current_activity)
-//{
-//  // there is a measure time of interaction and ive got random time
-//  // extend random values to interaction resolution
-//  // substract them and change activity and then finally change device state
-//  return current_activity;
-//}
+// function to estimate activity of user of device
+static uint8 EstimateActivity(volatile uint16 hnr_time[], volatile uchar rnd_values[], uint8 current_activity)
+{
+  // there is a measure time of interaction and ive got random time
+  // extend random values to interaction resolution
+  // substract them and change activity and then finally change device state
+  return current_activity;
+}
