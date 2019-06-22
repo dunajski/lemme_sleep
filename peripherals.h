@@ -62,6 +62,17 @@ typedef struct PortDBits
 
 /*
  *******************************************************************************
+ * Funkcja do zmiany wartosci 16bitowej w bloku, uniemozliwiajacym nadpisanie
+ * przez inne operacje. Do dzialania wymaga biblioteki util/atomic.h.
+ * Operacja atomic wywolywana jest z przywroceniem stanu SREG (RestoreON).
+ * [in] uint16 var_to_set - wskaznik na rejestr/zmienna do ustawienia
+ * [in] uint16 value - wartosc do wpisania do rejestru/zmiennej
+ *******************************************************************************
+ */
+void SetUint16_atomic(volatile uint16 * var_to_set, uint16 value);
+
+/*
+ *******************************************************************************
  * Inicjuje UART, 9600/8N1. Komunikacja na przerwaniach.
  *******************************************************************************
  */
@@ -69,10 +80,20 @@ void InitUsart(void);
 
 /*
  *******************************************************************************
- * Inicjalizacja Timer0 do sterowania silnikiem, 10 ms CTC/presc. 1024.
+ * Inicjalizacja Timer0 do sterowania silnikiem (zalaczanie i rozlaczanie)
+ * 10 ms CTC/presc. 1024.
  *******************************************************************************
  */
 void InitTimer0(void);
+
+/*
+ *******************************************************************************
+ * Inicjalizacja Timer1 do sterowania silnikiem (PWM, do sterowania zasilaniem
+ * silnika, zaleznie od napiecia zasilania). Sterowanie wyjsciem OC1A (inverted
+ * mode, bo uzywam PNP tranzystora do zalaczania silnika) Fast PWM/presc. 64.
+ *******************************************************************************
+ */
+void InitTimer1(void);
 
 /*
  *******************************************************************************
