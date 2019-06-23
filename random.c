@@ -11,6 +11,7 @@
 // temporary values.
 volatile uint16 random_values_grouped[NUM_ACTIONS] = {5000, 5000, 5000, 5000, 5000};
 volatile uchar change_random = 0;
+volatile uint16 measured_supply_voltage = 0;
 
 /*
  *******************************************************************************
@@ -72,7 +73,7 @@ ISR(TIMER0_COMP_vect)
  */
 ISR(ADC_vect)
 {
-  static uint8_t rnd_idx = 0;
+  static uint8_t tmp_idx = 0;
 
   if (device_state == ST_LOSOWANIE)
   {
@@ -80,21 +81,47 @@ ISR(ADC_vect)
     if (change_random)
     {
       random_lsb = ADC & 0x01;
-      random_values[rnd_idx] = random_lsb;
-      rnd_idx++;
+      random_values[tmp_idx] = random_lsb;
+      tmp_idx++;
     }
 
     // jesli wylosowano 13 bitow przejd do wibrowania, wylacz ADC
-    if (rnd_idx >= NUM_RND)
+    if (tmp_idx >= NUM_RND)
     {
       // TODO zrob funkcje ktora wypelni rand val grouped wartosciami wylosowanymi
-      rnd_idx = 0;
+      tmp_idx = 0;
       change_random = 0;
       TurnADCOff;
-      device_state = ST_WIBROWANIE;
+      device_state = ST_MIERZENIE_ZASILANIA;
       #if DEBUG_STATE == _ON
       StrToSerial("Wylosowano probki, nadaje sekwencje\n");
       #endif
+    }
+  }
+
+  // sprawdzanie napiecia zasilania
+  if (device_state == ST_MIERZENIE_ZASILANIA)
+  {
+    if (!tmp_idx)
+    {
+      tmp_idx++;
+      StartADConversion; // chcemy drugi wynik
+    }
+
+    // nastapila zmiana napiecia odniesienia oraz kanalu
+    // wedlud pdfa dopiero 2gi wynik jest stabilny
+    if (tmp_idx > 1)
+    {
+      // zapisz wynik
+      ADC = measured_supply_voltage;
+      // wyzeruj index
+      tmp_idx = 0;
+      // przywroc stare ustawienia ADC
+      InitAdc();
+      // wylacz przetwornik
+      TurnADCOff;
+      // przejdz do wibrowania
+      device_state = ST_WIBROWANIE;
     }
   }
 }

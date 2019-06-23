@@ -74,6 +74,23 @@ void GoToSleep(void)
   sei();
 }
 
+/*
+ *******************************************************************************
+ * Funkcja do zmiany wartosci 16bitowej w bloku, uniemozliwiajacym nadpisanie
+ * przez inne operacje. Do dzialania wymaga biblioteki util/atomic.h.
+ * Operacja atomic wywolywana jest z przywroceniem stanu SREG (RestoreON).
+ * [in] uint16 var_to_set - wskaznik na rejestr/zmienna do ustawienia
+ * [in] uint16 value - wartosc do wpisania do rejestru/zmiennej
+ *******************************************************************************
+ */
+void SetUint16_atomic(volatile uint16 * var_to_set, uint16 value)
+{
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+  {
+    *var_to_set = value;
+  }
+}
+
 #define BAUDRATE 9600UL
 #define BAUD_REG ((F_CPU/(16*BAUDRATE))-1)
 
@@ -107,24 +124,6 @@ void InitTimer0(void)
   TCCR0 |= (1 << WGM01) | (1 << CS02) | (1 << CS00);  // prescaler 1024  | CTC mode
   TIMSK |= (1 << OCIE0);                              //ctc timer0 isr enable
   OCR0 = 77;
-}
-
-
-/*
- *******************************************************************************
- * Funkcja do zmiany wartosci 16bitowej w bloku, uniemozliwiajacym nadpisanie
- * przez inne operacje. Do dzialania wymaga biblioteki util/atomic.h.
- * Operacja atomic wywolywana jest z przywroceniem stanu SREG (RestoreON).
- * [in] uint16 var_to_set - wskaznik na rejestr/zmienna do ustawienia
- * [in] uint16 value - wartosc do wpisania do rejestru/zmiennej
- *******************************************************************************
- */
-void SetUint16_atomic(volatile uint16 * var_to_set, uint16 value)
-{
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-  {
-    *var_to_set = value;
-  }
 }
 
 /*

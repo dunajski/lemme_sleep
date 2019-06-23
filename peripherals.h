@@ -14,10 +14,10 @@
 
 typedef struct PortABits
 {
-  volatile uchar adc_pin :1;    // PA 0
-  volatile uchar :1;            // PA 1
+  volatile uchar adc_pin :1;    // PA 0 losowanie
+  volatile uchar pwr_adc :1;    // PA 1 mierzenie napiecia zas.
   volatile uchar :3;            // PA 2-4
-  volatile uchar motor :1;      // PA 5
+  volatile uchar motor :1;      // PA 5 TODO: trzeba przeniesc na PWM
   volatile uchar debug_led :1;  // PA 6 // do prototypowania nie beda lutowane
   volatile uchar state_led :1;  // PA 7 // do prototypowania nie beda lutowane
 } TPortABits;
