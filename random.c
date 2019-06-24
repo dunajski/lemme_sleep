@@ -11,7 +11,15 @@
 // temporary values.
 volatile uint16 random_values_grouped[NUM_ACTIONS] = {5000, 5000, 5000, 5000, 5000};
 volatile uchar change_random = 0;
-volatile uint16 measured_supply_voltage = 0;
+
+/*
+ *******************************************************************************
+ * Obliczenie rejestru OCR1A dla Timer1, zaleznie od napiecia zasilania, zeby
+ * uzyskac bezpieczne napiecie dla silnika ~3,3 V.
+ * [in] adc_voltage - wartosc zmierzonego napiecia zasilania,
+ *******************************************************************************
+ */
+static void SetOCRForProperVoltage(uint16 adc_voltage);
 
 /*
  *******************************************************************************
@@ -112,10 +120,10 @@ ISR(ADC_vect)
     // wedlud pdfa dopiero 2gi wynik jest stabilny
     if (tmp_idx > 1)
     {
-      // zapisz wynik
-      ADC = measured_supply_voltage;
       // wyzeruj index
       tmp_idx = 0;
+      //oblicz wartosc OCRa zaleznie od napiecia zasilania
+      SetOCRForProperVoltage(ADC);
       // przywroc stare ustawienia ADC
       InitAdc();
       // wylacz przetwornik
@@ -126,3 +134,25 @@ ISR(ADC_vect)
   }
 }
 
+#define VCC_3V6_ADC_VAL 720 // wartosc przetwornika dla napiecia 3V6, dzielnik napiecia i Vref 2,56V
+/*
+ *******************************************************************************
+ * Obliczenie rejestru OCR1A dla Timer1, zaleznie od napiecia zasilania, zeby
+ * uzyskac bezpieczne napiecie dla silnika ~3,3 V.
+ * [in] adc_voltage - wartosc zmierzonego napiecia zasilania,
+ *******************************************************************************
+ */
+static void SetOCRForProperVoltage(uint16 adc_voltage)
+{
+  //TODO: testuj najpierw miernikiem zeby nie wylozyc silnika!
+  uint32 OCR_set_val = 0xFFFF;
+  // 0xFFFF na przetworniku daje 2,56 V
+  // Dzielnik napiecia bedzie na zasilaniu, a wiec wszystko na pol czyli dla
+  // 5V Vcc na pinie 2,5V <=> ADC = 1000
+  // 3,4 Vcc na pinie 1,7V <=> ADC = 680
+  // dla ponizszych moze byc juz 100% czyli jak najwyzsze napiecie i PWM jest 100%
+  if (adc_voltage > VCC_3V6_ADC_VAL) // to jest 3,6V na VCC
+    OCR_set_val = (VCC_3V6_ADC_VAL * 0xFFFF) / adc_voltage;
+
+  SetUint16_atomic(&OCR1A, (uint16)OCR_set_val);
+}
