@@ -9,6 +9,7 @@
 #include <avr/iom32.h>
 #include <avr/sleep.h>
 #include <util/atomic.h>
+#include <string.h>
 
 #include <stdint.h>
 #include "peripherals.h"
@@ -25,12 +26,13 @@ static uint8 EstimateActivity(volatile uint16 hnr_time[],volatile uchar rnd_valu
 // stany przycisku podczas odliczania czasu wcisnieta i puszczenia dla stanu ST_INTERAKCJA
 typedef enum
 {
-  INITIAL_KEY_STATE = 0,  // stan przed wcisnieciem pierwszym
-  BUTTON_NOT_PRESSED,     // stan puszczenia, ale musi uprzednio wystapic choc jedno wcisniecie
-  BUTTON_PRESSED,         // stan do rozpoczecia odlcizania wcisniecia, oraz ogolnego rozpoczenia mierzenia
-  BUTTON_IS_HOLDED,       // stan do naliczania czasu po debounce po wcisnieciu przycisku
-  BUTTON_IS_RELEASED      // stan do naliczania czasu po debounce po zwolnieniu przycisku
-
+  INITIAL_KEY_STATE = 0,    // stan przed wcisnieciem pierwszym
+  BUTTON_NOT_PRESSED,       // stan puszczenia, ale musi uprzednio wystapic choc jedno wcisniecie
+  BUTTON_PRESSED,           // stan do rozpoczecia odlcizania wcisniecia, oraz ogolnego rozpoczenia mierzenia
+  BUTTON_IS_HOLDED,         // stan do naliczania czasu po debounce po wcisnieciu przycisku
+  BUTTON_IS_RELEASED,       // stan do naliczania czasu po debounce po zwolnieniu przycisku
+  BUTTON_HOLDED_TOO_LONG,   // stan po przekroczeniu maks czasu wcisniecia (10 s)
+  BUTTON_RELEASED_TOO_LONG  // stan po przekroczeniu maks czasu puszczenia (10 s)
 } TKeyInterakcjastates;
 
 /*
@@ -137,6 +139,7 @@ void InitTimer1(void)
 {
   // Fast PWm// f PWM = fio/(presc*(1+OCR)
 //  TCCR1A |= (1 << COM1A1) | (1 << COM1A0);  // Inverted mode ('1' on match) // MOTOR
+ // NOTE: uwaga na stan wyjscia PWM
   TCCR1A |= (1 << COM1A1);  // Inverted mode ('1' on match) // LED
   TCCR1A |= (1 << WGM10);                   // Fast PWM
   TCCR1B |= (1 << WGM12);                   // Fast PWM
@@ -196,8 +199,8 @@ void InitIOs(void)
 
   MOTOR_DIR = 1;
 
-  ACTION_KEY_PULLUP = 1;
-  ACTION_KEY_DIR    = 0;
+  LEVER_PULLUP = 1;
+  LEVER_DIR    = 0;
 
   ADC_PIN_DIR    = 0; // wejscie
   ADC_PIN_PULLUP = 0; // bez pullupu, niech dryfuje
@@ -208,9 +211,11 @@ void InitIOs(void)
   device_state = ST_POWER_DWN; // ropoczynamy od stanu uspienia
 }
 
-#define WAKE_UP_MAX_TIME (50000UL) // 0,2 ms * 50 000 = 10 sekund
+#define TIME_10SECS (50000UL) // 0,2 ms * 50 000 = 10 sekund
+#define TIME_120SECS (600000UL) // 0,2 ms * 600 000 = 120 sekund
+#define TIME_20SECS (100000UL)
 #define PRESS_TO_WAKE_UP_COUNT (3)
-#define ISR_DEBOUNCE_CNT 400 // 200 * 0,2 ms = 40 ms
+#define ISR_DEBOUNCE_CNT (400) // 200 * 0,2 ms = 40 ms
 
 /*
  *******************************************************************************
@@ -229,6 +234,7 @@ ISR(TIMER2_COMP_vect)
   static uint8  key_state_interakcja = INITIAL_KEY_STATE;
   static uint16 keycnt2 = 0;
   static uint16 button_state_time = 0; // 0,2 ms * 0xFFFF = 13 s (max czasu)
+  static uint32 sequence_time = 0; // zeby sprawdzac maksymalny czas interakcji
   // Obsluga wybudzania
   static uint16 wake_up_timer = 0;
   static uint8  wake_up_cnt = 0;
@@ -244,16 +250,16 @@ ISR(TIMER2_COMP_vect)
     switch (keylev)
     {
       case 0:  // waiting for press
-        if (!ACTION_KEY_VAL)
+        if (LEVER_PRESSED)
         {
-          keyr = ACTION_KEY_VAL;
+          keyr = LEVER_VAL;
           keylev = 1;
           keycnt = ISR_DEBOUNCE_CNT;
         }
       break;
 
       case 1: // pressed,debounced
-        if (ACTION_KEY_VAL == keyr)
+        if (LEVER_VAL == keyr)
         {
           if (device_state != ST_INTERAKCJA)
             keylev = 2;
@@ -283,7 +289,7 @@ ISR(TIMER2_COMP_vect)
       break;
 
       case 2:
-        if (ACTION_KEY_VAL == 1)
+        if (LEVER_VAL == 1)
           keylev = 0;
       break;
     }
@@ -296,7 +302,7 @@ ISR(TIMER2_COMP_vect)
   // Obsluga stanu ST_WAIT_TO_WAKE_UP po wybudzeniu
   if (device_state == ST_WAIT_TO_WAKE_UP)
   {
-    if (wake_up_timer >= WAKE_UP_MAX_TIME)
+    if (wake_up_timer >= TIME_10SECS)
     {
       wake_up_timer = 0;
       wake_up_cnt = 0;
@@ -333,12 +339,21 @@ ISR(TIMER2_COMP_vect)
   // Obsluga stanu INTERAKCJA po wylosowaniu i wibrowaniu silnika
   if (device_state == ST_INTERAKCJA)
   {
+    if (key_state_interakcja != INITIAL_KEY_STATE)
+      sequence_time++;
+
+    // jesli czas sekewencji przekroczono wpisz do wszystkich
+    // maks dlugosci i potraktuj jako koniec sekwencji
+    if (sequence_time >= TIME_20SECS)
+    {
+      // TODO: zastanwow sie co wtedy
+    }
 
     if (!keycnt2 && (saved_states < NUM_ACTIONS))
     {
       // aby rozpoczac mierzenie hold and release musi byc stan init, zeby mozna bylo rozpoczac
       // mierzenie od wcisniecia, a wiec oczekuje na wcisniecie przycisku
-      if ((key_state_interakcja == INITIAL_KEY_STATE) && (!(ACTION_KEY_VAL)))
+      if ((key_state_interakcja == INITIAL_KEY_STATE) && (LEVER_PRESSED))
       {
         // debouncing wcisnieto przycisk
         keycnt2 = ISR_DEBOUNCE_CNT;
@@ -348,7 +363,7 @@ ISR(TIMER2_COMP_vect)
       // sprawdzamy czy po debounce przycisk wciaz jest przycisniety
       if (key_state_interakcja == BUTTON_PRESSED)
       {
-        if (!(ACTION_KEY_VAL))
+        if (LEVER_PRESSED)
         {
           button_state_time = ISR_DEBOUNCE_CNT;  // dodanie czasu debounce'a od teraz mozna liczyc dalej
           key_state_interakcja = BUTTON_IS_HOLDED;
@@ -371,9 +386,19 @@ ISR(TIMER2_COMP_vect)
       {
         button_state_time++;
 
+        // jesli ktos wcisnal dluzej niz 10 sec
+        if (button_state_time >= TIME_10SECS)
+        {
+          #if DEBUG_STATE
+          StrToSerial("Przegles z tym holdem\n");
+          #endif
+          key_state_interakcja = BUTTON_HOLDED_TOO_LONG;
+          *hnr_time_ptr++ = 0xFFFF;
+        }
+
         // jesli stan wcisniecia przycisku oraz przycisk zostal zwolniony, czas na debounce release'a przycisku
         // zapisz czas wcisniecia, wyzeruj licznik i przejdz do liczenia zwolnienia przycisku
-        if (ACTION_KEY_VAL)
+        if (LEVER_UNPRESSED)
         {
           *hnr_time_ptr++ = button_state_time;
           button_state_time = 0;
@@ -388,7 +413,7 @@ ISR(TIMER2_COMP_vect)
       // zapis odbywa sie dopiero po pierwszym wcisnieciu "holdzie" przycisku
       if (key_state_interakcja == BUTTON_NOT_PRESSED)
       {
-        if (ACTION_KEY_VAL)
+        if (LEVER_UNPRESSED)
         {
           button_state_time = ISR_DEBOUNCE_CNT;  // dodanie czasu debounce'a od teraz mozna liczyc dalej
           key_state_interakcja = BUTTON_IS_RELEASED;
@@ -408,8 +433,18 @@ ISR(TIMER2_COMP_vect)
       {
         button_state_time++;
 
+        // jesli ktos puscil na  dluzej niz 10 sec
+        if (button_state_time >= TIME_10SECS)
+        {
+          #if DEBUG_STATE
+          StrToSerial("Przegles z ta przerwa\n");
+          #endif
+          key_state_interakcja = BUTTON_RELEASED_TOO_LONG;
+          *hnr_time_ptr++ = 0xFFFF;
+        }
+
         // jesli wcisnieto podczas zwolnionego przycisku, czyli liczymy kolejny stan wcisniecia
-        if (!ACTION_KEY_VAL)
+        if (LEVER_PRESSED)
         {
           *hnr_time_ptr++ = button_state_time;
           button_state_time = 0;
@@ -417,6 +452,35 @@ ISR(TIMER2_COMP_vect)
           keycnt2 = ISR_DEBOUNCE_CNT;
           key_state_interakcja = BUTTON_PRESSED;
         }
+      }
+    }
+
+    if (key_state_interakcja == BUTTON_HOLDED_TOO_LONG)
+    {
+      // odpusczono po dlugim wcisnieciu
+      if (LEVER_UNPRESSED)
+      {
+        #if DEBUG_STATE
+        StrToSerial("...w koncu puscil\n");
+        #endif
+        keycnt2 = ISR_DEBOUNCE_CNT;
+        key_state_interakcja = BUTTON_NOT_PRESSED;
+        button_state_time = 0;
+        saved_states++;
+      }
+    }
+    else if (key_state_interakcja == BUTTON_RELEASED_TOO_LONG)
+    {
+      // wcisnieto po dlugiej przerwie
+      if (LEVER_PRESSED)
+      {
+        #if DEBUG_STATE
+        StrToSerial("...w koncu wcisnal\n");
+        #endif
+        keycnt2 = ISR_DEBOUNCE_CNT;
+        key_state_interakcja = BUTTON_PRESSED;
+        button_state_time = 0;
+        saved_states++;
       }
     }
 
@@ -431,7 +495,8 @@ ISR(TIMER2_COMP_vect)
       if (index == 0)
       {
         button_state_time = 0;
-        hnr_time_ptr -= NUM_ACTIONS;
+        // przesun na poczatek
+        hnr_time_ptr= holdandreleasetime;
         #if DEBUG_STATE == _ON
         StrToSerial("Interakcja nr:");
         how_many_times_sent++;
@@ -460,19 +525,22 @@ ISR(TIMER2_COMP_vect)
       hnr_time_ptr++;
       index++;
     }
-  }
 
-  if(index >= NUM_ACTIONS)
+  if (index >= NUM_ACTIONS)
   {
     key_state_interakcja = INITIAL_KEY_STATE;
     saved_states = 0;
     index = 0;
-    hnr_time_ptr -= NUM_ACTIONS;
+    // przesun na poczatek
+    hnr_time_ptr = holdandreleasetime;
     device_state = ST_OCENA;
+    sequence_time = 0;
   }
 
   if (keycnt2 > 0)
     keycnt2--;
+
+  }
   //============================================================================
 
   // Obsluga stanu INTERAKCJA po wylosowaniu i wibrowaniu silnika

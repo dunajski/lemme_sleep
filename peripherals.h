@@ -24,7 +24,7 @@ typedef struct PortABits
 typedef struct PortDBits
 {
   volatile uchar :2;            // PD 0-1
-  volatile uchar action_key:1;  // PD 2
+  volatile uchar action_lever:1;// PD 2
   volatile uchar :2;            // PD 3-4
   volatile uchar motor :1;      // PD 5 (OCR1A)
   volatile uchar :2;            // PD 6-7
@@ -42,9 +42,9 @@ typedef struct PortDBits
 #define MOTOR_DIR ((TPortDBits *)&DDRD)->motor
 #define MOTOR_OUT ((TPortDBits *)&PORTD)->motor
 
-#define ACTION_KEY_VAL    ((TPortDBits *)&PIND)->action_key
-#define ACTION_KEY_DIR    ((TPortDBits *)&DDRD)->action_key
-#define ACTION_KEY_PULLUP ((TPortDBits *)&PORTD)->action_key
+#define LEVER_VAL    ((TPortDBits *)&PIND)->action_lever
+#define LEVER_DIR    ((TPortDBits *)&DDRD)->action_lever
+#define LEVER_PULLUP ((TPortDBits *)&PORTD)->action_lever
 
 #define ADC_PIN_VAL     ((TPortABits *)&PINA)->adc_pin
 #define ADC_PIN_DIR     ((TPortABits *)&DDRA)->adc_pin
@@ -62,9 +62,11 @@ typedef struct PortDBits
 #define STATE_LED_OFF  (STATE_LED_OUT=0)
 #define STATE_LED_TOGGLE  (STATE_LED_OUT=(!STATE_LED_OUT))
 
-
 #define MOTOR_ON   (MOTOR_OUT=1)
 #define MOTOR_OFF  (MOTOR_OUT=0)
+
+#define LEVER_PRESSED   (!LEVER_VAL)
+#define LEVER_UNPRESSED (LEVER_VAL)
 
 /*
  *******************************************************************************
