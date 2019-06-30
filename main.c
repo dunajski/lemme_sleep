@@ -17,6 +17,7 @@ int main(void)
   InitUsart();
   InitAdc();
   InitTimer0();
+  InitTimer1();
   InitTimer2();
   InitIOs();
   InitExternalInterupt1();

@@ -18,8 +18,10 @@ void SetAdcToMeasureSupplVoltage(void)
 {
   ADMUX |= (1 << REFS0) | (1 << REFS1); // internal 2,56 V
   ADMUX |= (1 << MUX0); // ADC1 (PA1)
-  ADCSRA |= (1 << ADEN) | (1 << ADSC) | (1 << ADIE); // Enable/ start / ISR EN
-  ADCSRA |= (1 << ADPS1) | (1 << ADPS2); // prescaler 64 => 125 kHz
+  // ADC ENABLE/start conversion/autotriger EN/interrupt execute EN/
+  ADCSRA |= (1 << ADEN) | (1 << ADATE) | (1 << ADIE);
+  // presk 64  f_adc=8MHz/64=125kHz
+  ADCSRA |= (1 << ADPS1) | (1 << ADPS2);
 }
 
 

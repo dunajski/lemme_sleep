@@ -136,12 +136,13 @@ void InitTimer0(void)
 void InitTimer1(void)
 {
   // Fast PWm// f PWM = fio/(presc*(1+OCR)
-  TCCR1A |= (1 << COM1A1) | (1 << COM1A0);  // Inverted mode ('1' on match)
-  TCCR1A |= (1 << WGM10) | (1 << WGM11);    // Fast PWM
-  TCCR1B |= (1 << WGM12) | (1 << WGM13);    // Fast PWM
-  TCCR1B |= (1 << CS11) | (1 << CS10);      // Prescaler 64
+//  TCCR1A |= (1 << COM1A1) | (1 << COM1A0);  // Inverted mode ('1' on match) // MOTOR
+  TCCR1A |= (1 << COM1A1);  // Inverted mode ('1' on match) // LED
+  TCCR1A |= (1 << WGM10);                   // Fast PWM
+  TCCR1B |= (1 << WGM12);                   // Fast PWM
+  TCCR1B |= (1 << CS11);                    // Prescaler 8
 
-  SetUint16_atomic(&OCR1A, 0x7FFF);
+  SetUint16_atomic(&OCR1A, 0x0000);
 }
 
 /*
@@ -200,6 +201,9 @@ void InitIOs(void)
 
   ADC_PIN_DIR    = 0; // wejscie
   ADC_PIN_PULLUP = 0; // bez pullupu, niech dryfuje
+
+  PWR_ADC_DIR     = 0;
+  PWR_ADC_PULLUP  = 1;
 
   device_state = ST_POWER_DWN; // ropoczynamy od stanu uspienia
 }
@@ -315,6 +319,14 @@ ISR(TIMER2_COMP_vect)
   {
     TurnADCOn;
     change_random = 1;
+  }
+  //============================================================================
+
+  // Obsluga stanu MIERZENIE_ZASILANIA
+  if (device_state == ST_MIERZENIE_ZASILANIA)
+  {
+    SetAdcToMeasureSupplVoltage();
+    TurnADCOn;
   }
   //============================================================================
 
