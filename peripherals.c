@@ -8,6 +8,7 @@
 #include <avr/interrupt.h>
 #include <avr/iom32.h>
 #include <avr/sleep.h>
+#include <util/atomic.h>
 
 #include <stdint.h>
 #include "peripherals.h"
@@ -73,6 +74,23 @@ void GoToSleep(void)
   sei();
 }
 
+/*
+ *******************************************************************************
+ * Funkcja do zmiany wartosci 16bitowej w bloku, uniemozliwiajacym nadpisanie
+ * przez inne operacje. Do dzialania wymaga biblioteki util/atomic.h.
+ * Operacja atomic wywolywana jest z przywroceniem stanu SREG (RestoreON).
+ * [in] uint16 var_to_set - wskaznik na rejestr/zmienna do ustawienia
+ * [in] uint16 value - wartosc do wpisania do rejestru/zmiennej
+ *******************************************************************************
+ */
+void SetUint16_atomic(volatile uint16 * var_to_set, uint16 value)
+{
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+  {
+    *var_to_set = value;
+  }
+}
+
 #define BAUDRATE 9600UL
 #define BAUD_REG ((F_CPU/(16*BAUDRATE))-1)
 
@@ -95,7 +113,8 @@ void InitUsart(void)
 
 /*
  *******************************************************************************
- * Inicjalizacja Timer0 do sterowania silnikiem, 10 ms CTC/presc. 1024.
+ * Inicjalizacja Timer0 do sterowania silnikiem (zalaczanie i rozlaczanie)
+ * 10 ms CTC/presc. 1024.
  *******************************************************************************
  */
 void InitTimer0(void)
@@ -105,6 +124,25 @@ void InitTimer0(void)
   TCCR0 |= (1 << WGM01) | (1 << CS02) | (1 << CS00);  // prescaler 1024  | CTC mode
   TIMSK |= (1 << OCIE0);                              //ctc timer0 isr enable
   OCR0 = 77;
+}
+
+/*
+ *******************************************************************************
+ * Inicjalizacja Timer1 do sterowania silnikiem (PWM, do sterowania zasilaniem
+ * silnika, zaleznie od napiecia zasilania). Sterowanie wyjsciem OC1A (inverted
+ * mode, bo uzywam PNP tranzystora do zalaczania silnika) Fast PWM/presc. 64.
+ *******************************************************************************
+ */
+void InitTimer1(void)
+{
+  // Fast PWm// f PWM = fio/(presc*(1+OCR)
+//  TCCR1A |= (1 << COM1A1) | (1 << COM1A0);  // Inverted mode ('1' on match) // MOTOR
+  TCCR1A |= (1 << COM1A1);  // Inverted mode ('1' on match) // LED
+  TCCR1A |= (1 << WGM10);                   // Fast PWM
+  TCCR1B |= (1 << WGM12);                   // Fast PWM
+  TCCR1B |= (1 << CS11);                    // Prescaler 8
+
+  SetUint16_atomic(&OCR1A, 0x0000);
 }
 
 /*
@@ -163,6 +201,9 @@ void InitIOs(void)
 
   ADC_PIN_DIR    = 0; // wejscie
   ADC_PIN_PULLUP = 0; // bez pullupu, niech dryfuje
+
+  PWR_ADC_DIR     = 0;
+  PWR_ADC_PULLUP  = 1;
 
   device_state = ST_POWER_DWN; // ropoczynamy od stanu uspienia
 }
@@ -281,6 +322,14 @@ ISR(TIMER2_COMP_vect)
   }
   //============================================================================
 
+  // Obsluga stanu MIERZENIE_ZASILANIA
+  if (device_state == ST_MIERZENIE_ZASILANIA)
+  {
+    SetAdcToMeasureSupplVoltage();
+    TurnADCOn;
+  }
+  //============================================================================
+
   // Obsluga stanu INTERAKCJA po wylosowaniu i wibrowaniu silnika
   if (device_state == ST_INTERAKCJA)
   {
@@ -379,7 +428,7 @@ ISR(TIMER2_COMP_vect)
       // wyzeruj tablice robocza
 
       // przed pierwszym holdem wyswietl liczbe kolejnej odebranej interakcji
-      if(index == 0)
+      if (index == 0)
       {
         button_state_time = 0;
         hnr_time_ptr -= NUM_ACTIONS;

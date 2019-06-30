@@ -7,10 +7,20 @@
 
 #include <avr/interrupt.h>
 #include "random.h"
+#include "energy.h"
 
 // temporary values.
 volatile uint16 random_values_grouped[NUM_ACTIONS] = {5000, 5000, 5000, 5000, 5000};
 volatile uchar change_random = 0;
+
+/*
+ *******************************************************************************
+ * Obliczenie rejestru OCR1A dla Timer1, zaleznie od napiecia zasilania, zeby
+ * uzyskac bezpieczne napiecie dla silnika ~3,3 V.
+ * [in] adc_voltage - wartosc zmierzonego napiecia zasilania,
+ *******************************************************************************
+ */
+static void SetOCRForProperVoltage(uint16 adc_voltage);
 
 /*
  *******************************************************************************
@@ -63,7 +73,7 @@ ISR(TIMER0_COMP_vect)
   }
 
 }
-
+volatile float wynik;
 /*
  *******************************************************************************
  * Przerwanie odpowiedzialne za wylosowanie probek, zeby co interakcje dostac
@@ -72,7 +82,41 @@ ISR(TIMER0_COMP_vect)
  */
 ISR(ADC_vect)
 {
-  static uint8_t rnd_idx = 0;
+  static uint8_t tmp_idx = 0;
+
+  // sprawdzanie napiecia zasilania
+  if (device_state == ST_MIERZENIE_ZASILANIA)
+  {
+    // dopiero drugi wynik jest wiarygodny
+    if (!tmp_idx)
+      tmp_idx++;
+
+    // nastapila zmiana napiecia odniesienia oraz kanalu
+    // wedlud pdfa dopiero 2gi wynik jest stabilny
+    if (tmp_idx >= 1)
+    {
+      // wyzeruj index
+      tmp_idx = 0;
+      //oblicz wartosc OCRa zaleznie od napiecia zasilania
+      SetOCRForProperVoltage(ADC);
+      wynik = (2560.0 * ((float)ADC) )/ 1024.0;
+      wynik /= 10;
+      #if DEBUG_STATE == _ON
+      StrToSerial("ADC = ");
+      PutUInt16ToSerial(ADC, 1, 5);
+      StrToSerial("\nVolt  = ");
+      PutUInt16ToSerial((uint16)wynik, 1, 4);
+      StrToSerial("\n");
+      #endif
+      // przywroc stare ustawienia ADC
+      InitAdc();
+      // wylacz przetwornik
+      TurnADCOff;
+      // przejdz do wibrowania
+
+      device_state = ST_WIBROWANIE;
+    }
+  }
 
   if (device_state == ST_LOSOWANIE)
   {
@@ -80,22 +124,45 @@ ISR(ADC_vect)
     if (change_random)
     {
       random_lsb = ADC & 0x01;
-      random_values[rnd_idx] = random_lsb;
-      rnd_idx++;
+      random_values[tmp_idx] = random_lsb;
+      tmp_idx++;
     }
 
     // jesli wylosowano 13 bitow przejd do wibrowania, wylacz ADC
-    if (rnd_idx >= NUM_RND)
+    if (tmp_idx >= NUM_RND)
     {
       // TODO zrob funkcje ktora wypelni rand val grouped wartosciami wylosowanymi
-      rnd_idx = 0;
+      tmp_idx = 0;
       change_random = 0;
       TurnADCOff;
-      device_state = ST_WIBROWANIE;
+      device_state = ST_MIERZENIE_ZASILANIA;
       #if DEBUG_STATE == _ON
       StrToSerial("Wylosowano probki, nadaje sekwencje\n");
       #endif
     }
   }
+
 }
 
+#define VCC_3V6_ADC_VAL 720UL // wartosc przetwornika dla napiecia 3V6, dzielnik napiecia i Vref 2,56V
+/*
+ *******************************************************************************
+ * Obliczenie rejestru OCR1A dla Timer1, zaleznie od napiecia zasilania, zeby
+ * uzyskac bezpieczne napiecie dla silnika ~3,3 V.
+ * [in] adc_voltage - wartosc zmierzonego napiecia zasilania,
+ *******************************************************************************
+ */
+static void SetOCRForProperVoltage(uint16 adc_voltage)
+{
+  //TODO: testuj najpierw miernikiem zeby nie wylozyc silnika!
+  uint32 OCR_set_val = 0x000000FF;
+  // 0xFFFF na przetworniku daje 2,56 V
+  // Dzielnik napiecia bedzie na zasilaniu, a wiec wszystko na pol czyli dla
+  // 5V Vcc na pinie 2,5V <=> ADC = 1000
+  // 3,4 Vcc na pinie 1,7V <=> ADC = 680
+  // dla ponizszych moze byc juz 100% czyli jak najwyzsze napiecie i PWM jest 100%
+  if (adc_voltage > VCC_3V6_ADC_VAL) // to jest 3,6V na VCC
+    OCR_set_val = (VCC_3V6_ADC_VAL * 0x00FF) / adc_voltage;
+
+  SetUint16_atomic(&OCR1A, (uint16)OCR_set_val);
+}

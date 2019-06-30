@@ -26,9 +26,10 @@ typedef enum
   ST_POWER_DWN = 0,
   ST_WAIT_TO_WAKE_UP,
   ST_LOSOWANIE,   // tuz przed nadawaniem krotki okres przeznacozny na wylosowanie
+  ST_MIERZENIE_ZASILANIA, // tuz przed wibrowaniem sprawdza napiecia zasilania
   ST_WIBROWANIE,
-  ST_INTERAKCJA,  // rejestrowanie odpowiedzi uzytkownika
-  ST_OCENA        // ocena "jakosci" odzworowania sygnalu losowego
+  ST_INTERAKCJA,          // rejestrowanie odpowiedzi uzytkownika
+  ST_OCENA                // ocena "jakosci" odzworowania sygnalu losowego
 } TDeviceStates;
 
 typedef unsigned char uchar;
