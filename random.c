@@ -127,7 +127,7 @@ ISR(ADC_vect)
       #if DEBUG_STATE == _ON
       StrToSerial("ADC = ");
       PutUInt16ToSerial(ADC, 1, 5);
-      StrToSerial("\nVolt  = ");
+      StrToSerial("\nVolt = ");
       PutUInt16ToSerial((uint16)wynik, 1, 4);
       StrToSerial("\n");
       #endif
@@ -154,21 +154,20 @@ ISR(ADC_vect)
     // jesli wylosowano 13 bitow przejd do wibrowania, wylacz ADC
     if (tmp_idx >= NUM_RND)
     {
-
-      // TODO zrob funkcje ktora wypelni rand val grouped wartosciami wylosowanymi
       FillRandomValues(random_values_grouped, random_values);
+
       #if DEBUG_STATE == _ON
-      StrToSerial("n1: ");
+      StrToSerial("1: ");
       PutUInt16ToSerial(random_values_grouped[0], 1, 5);
-      StrToSerial("\n2: ");
+      StrToSerial(" ms\n2: ");
       PutUInt16ToSerial(random_values_grouped[1], 1, 5);
-      StrToSerial("\n3: ");
+      StrToSerial(" ms\n3: ");
       PutUInt16ToSerial(random_values_grouped[2], 1, 5);
-      StrToSerial("\n4: ");
+      StrToSerial(" ms\n4: ");
       PutUInt16ToSerial(random_values_grouped[3], 1, 5);
-      StrToSerial("\n5: ");
+      StrToSerial(" ms\n5: ");
       PutUInt16ToSerial(random_values_grouped[4], 1, 5);
-      StrToSerial("\nWylosowano probki, nadaje sekwencje\n");
+      StrToSerial(" ms\nWylosowano probki, nadaje sekwencje\n");
       #endif
 
       tmp_idx = 0;
