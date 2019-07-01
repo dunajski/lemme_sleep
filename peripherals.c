@@ -546,6 +546,7 @@ ISR(TIMER2_COMP_vect)
   // Obsluga stanu INTERAKCJA po wylosowaniu i wibrowaniu silnika
   if (device_state == ST_OCENA)
   {
+    LEVER_DIR = 1;
     goto_sleep_delay++;
     if (goto_sleep_delay == 10)
     {
@@ -560,6 +561,7 @@ ISR(TIMER2_COMP_vect)
     // opoznij przejscie o 2,5 s zeby wszystko sie wyslalo
     if (goto_sleep_delay >= 5000)
     {
+      LEVER_DIR = 0;
       goto_sleep_delay = 0;
       device_state = ST_POWER_DWN;
     }

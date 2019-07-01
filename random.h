@@ -31,7 +31,7 @@ volatile uchar device_state;
 // wartosci moglybybyc jako uchar a nastepnie mnozone w przerwaniu, ale takie
 // poszerzenie rozdzielczosci umozliwi prostsze dzialanie na tych liczbach
 // w trakcie oceny aktywnosci uzytkownika
-extern volatile uint16 random_values_grouped[NUM_ACTIONS];
+volatile uint16 random_values_grouped[NUM_ACTIONS];
 
 // w tej tablicy musza sie znalezc wartosci interakcji dla poszczegolnych faz odbierania
 // tj. dla puszczenia (przerwy) oraz przytrzymania klawisza, zapisywanie gdy ST_INTERAKCJA

@@ -74,6 +74,29 @@ ISR(TIMER0_COMP_vect)
 
 }
 volatile float wynik;
+
+
+/*
+ *******************************************************************************
+ * Funkcja do wypelniania wylosowanymi wartosciami, tablice od nadawania
+ * interakcji
+ *******************************************************************************
+ */
+static void FillRandomValues(volatile uint16 random_values_grouped[NUM_ACTIONS],
+                             volatile uchar random_values[NUM_RND])
+{
+  uint8 i;
+  // TODO zrob funkcje ktora wypelni rand val grouped wartosciami wylosowanymi
+  random_values_grouped[0] = random_values[0] + (1 << random_values[1]) + (2 << random_values[2]);
+  random_values_grouped[1] = random_values[3] + (1 << random_values[4]);
+  random_values_grouped[2] = random_values[5] + (1 << random_values[6]) + (2 << random_values[7]);
+  random_values_grouped[3] = random_values[8] + (1 << random_values[9]);
+  random_values_grouped[4] = random_values[10] + (1 << random_values[11]) + (2 << random_values[12]);
+
+  for (i = 0; i < NUM_ACTIONS; i++)
+    random_values_grouped[i] *= 500;
+}
+
 /*
  *******************************************************************************
  * Przerwanie odpowiedzialne za wylosowanie probek, zeby co interakcje dostac
@@ -131,14 +154,27 @@ ISR(ADC_vect)
     // jesli wylosowano 13 bitow przejd do wibrowania, wylacz ADC
     if (tmp_idx >= NUM_RND)
     {
+
       // TODO zrob funkcje ktora wypelni rand val grouped wartosciami wylosowanymi
+      FillRandomValues(random_values_grouped, random_values);
+      #if DEBUG_STATE == _ON
+      StrToSerial("n1: ");
+      PutUInt16ToSerial(random_values_grouped[0], 1, 5);
+      StrToSerial("\n2: ");
+      PutUInt16ToSerial(random_values_grouped[1], 1, 5);
+      StrToSerial("\n3: ");
+      PutUInt16ToSerial(random_values_grouped[2], 1, 5);
+      StrToSerial("\n4: ");
+      PutUInt16ToSerial(random_values_grouped[3], 1, 5);
+      StrToSerial("\n5: ");
+      PutUInt16ToSerial(random_values_grouped[4], 1, 5);
+      StrToSerial("\nWylosowano probki, nadaje sekwencje\n");
+      #endif
+
       tmp_idx = 0;
       change_random = 0;
       TurnADCOff;
       device_state = ST_MIERZENIE_ZASILANIA;
-      #if DEBUG_STATE == _ON
-      StrToSerial("Wylosowano probki, nadaje sekwencje\n");
-      #endif
     }
   }
 
