@@ -52,12 +52,12 @@ ISR(TIMER0_COMP_vect)
     if (!(rnd_val_gr_idx % 2))
     {
       DEBUG_LED_ON;
-      //MOTOR_ON;
+      MOTOR_ON;
     }
     else
     {
       DEBUG_LED_OFF;
-      //MOTOR_OFF;
+      MOTOR_OFF;
     }
 
     rnd_val_cnt++;
@@ -86,7 +86,6 @@ static void FillRandomValues(volatile uint16 random_values_grouped[NUM_ACTIONS],
                              volatile uchar random_values[NUM_RND])
 {
   uint8 i;
-  // TODO zrob funkcje ktora wypelni rand val grouped wartosciami wylosowanymi
   random_values_grouped[0] = random_values[0] + (1 << random_values[1]) + (2 << random_values[2]);
   random_values_grouped[1] = random_values[3] + (1 << random_values[4]);
   random_values_grouped[2] = random_values[5] + (1 << random_values[6]) + (2 << random_values[7]);

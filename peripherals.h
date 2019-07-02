@@ -26,8 +26,9 @@ typedef struct PortDBits
   volatile uchar :2;            // PD 0-1
   volatile uchar action_lever:1;// PD 2
   volatile uchar :2;            // PD 3-4
-  volatile uchar motor :1;      // PD 5 (OCR1A)
-  volatile uchar :2;            // PD 6-7
+  volatile uchar emmiter :1;    // PD 5 (OCR1A)
+  volatile uchar motor :1;      // PD 6
+  volatile uchar :1;            // PD 7
 } TPortDBits;
 
 #define STATE_LED_VAL ((TPortABits *)&PINA)->state_led
@@ -38,14 +39,6 @@ typedef struct PortDBits
 #define DEBUG_LED_DIR ((TPortABits *)&DDRA)->debug_led
 #define DEBUG_LED_OUT ((TPortABits *)&PORTA)->debug_led
 
-#define MOTOR_VAL ((TPortDBits *)&PIND)->motor
-#define MOTOR_DIR ((TPortDBits *)&DDRD)->motor
-#define MOTOR_OUT ((TPortDBits *)&PORTD)->motor
-
-#define LEVER_VAL    ((TPortDBits *)&PIND)->action_lever
-#define LEVER_DIR    ((TPortDBits *)&DDRD)->action_lever
-#define LEVER_PULLUP ((TPortDBits *)&PORTD)->action_lever
-
 #define ADC_PIN_VAL     ((TPortABits *)&PINA)->adc_pin
 #define ADC_PIN_DIR     ((TPortABits *)&DDRA)->adc_pin
 #define ADC_PIN_PULLUP  ((TPortABits *)&PORTA)->adc_pin
@@ -53,6 +46,18 @@ typedef struct PortDBits
 #define PWR_ADC_VAL     ((TPortABits *)&PINA)->pwr_adc
 #define PWR_ADC_DIR     ((TPortABits *)&DDRA)->pwr_adc
 #define PWR_ADC_PULLUP  ((TPortABits *)&PORTA)->pwr_adc
+
+#define MOTOR_VAL ((TPortDBits *)&PIND)->motor
+#define MOTOR_DIR ((TPortDBits *)&DDRD)->motor
+#define MOTOR_OUT ((TPortDBits *)&PORTD)->motor
+
+#define EMMITER_VAL ((TPortDBits *)&PIND)->emmiter
+#define EMMITER_DIR ((TPortDBits *)&DDRD)->emmiter
+#define EMMITER_OUT ((TPortDBits *)&PORTD)->emmiter
+
+#define LEVER_VAL    ((TPortDBits *)&PIND)->action_lever
+#define LEVER_DIR    ((TPortDBits *)&DDRD)->action_lever
+#define LEVER_PULLUP ((TPortDBits *)&PORTD)->action_lever
 
 #define DEBUG_LED_ON   (DEBUG_LED_OUT=1)
 #define DEBUG_LED_OFF  (DEBUG_LED_OUT=0)
@@ -62,8 +67,8 @@ typedef struct PortDBits
 #define STATE_LED_OFF  (STATE_LED_OUT=0)
 #define STATE_LED_TOGGLE  (STATE_LED_OUT=(!STATE_LED_OUT))
 
-#define MOTOR_ON   (MOTOR_OUT=1)
-#define MOTOR_OFF  (MOTOR_OUT=0)
+#define MOTOR_ON   (MOTOR_OUT=0) // PNP bramka sterowana '0'
+#define MOTOR_OFF  (MOTOR_OUT=1) // PNP bramka sterowana '0'
 
 #define LEVER_PRESSED   (!LEVER_VAL)
 #define LEVER_UNPRESSED (LEVER_VAL)

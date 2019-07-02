@@ -138,12 +138,12 @@ void InitTimer0(void)
 void InitTimer1(void)
 {
   // Fast PWm// f PWM = fio/(presc*(1+OCR)
-//  TCCR1A |= (1 << COM1A1) | (1 << COM1A0);  // Inverted mode ('1' on match) // MOTOR
- // NOTE: uwaga na stan wyjscia PWM
-  TCCR1A |= (1 << COM1A1);  // Inverted mode ('1' on match) // LED
-  TCCR1A |= (1 << WGM10);                   // Fast PWM
-  TCCR1B |= (1 << WGM12);                   // Fast PWM
-  TCCR1B |= (1 << CS11);                    // Prescaler 8
+  //TCCR1A |= (1 << COM1A1) | (1 << COM1A0);  // Inverted mode ('1' on match) // MOTOR
+
+  TCCR1A |= (1 << COM1A1);  // normal mode bo steruje napieciem na emiterze
+  TCCR1A |= (1 << WGM10);   // Fast PWM
+  TCCR1B |= (1 << WGM12);   // Fast PWM
+  TCCR1B |= (1 << CS11);    // Prescaler 8
 
   SetUint16_atomic(&OCR1A, 0x0000);
 }
@@ -197,7 +197,9 @@ void InitIOs(void)
   STATE_LED_DIR = 1; // dioda testowa
   DEBUG_LED_DIR = 1; // dioda testowa
 
-  MOTOR_DIR = 1;
+  MOTOR_DIR = 1; // sterowanie wl/wyl silnika (baza)
+  EMMITER_DIR = 1; // sterowanie napieciem zasilania silnika (emiter)
+  MOTOR_OFF;
 
   LEVER_PULLUP = 1;
   LEVER_DIR    = 0;
@@ -215,7 +217,7 @@ void InitIOs(void)
 #define TIME_120SECS (600000UL) // 0,2 ms * 600 000 = 120 sekund
 #define TIME_20SECS (100000UL)
 #define PRESS_TO_WAKE_UP_COUNT (3)
-#define ISR_DEBOUNCE_CNT (400) // 200 * 0,2 ms = 40 ms
+#define ISR_DEBOUNCE_CNT (600) // 200 * 0,2 ms = 40 ms
 
 /*
  *******************************************************************************
