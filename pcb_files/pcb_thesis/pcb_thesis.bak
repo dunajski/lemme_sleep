@@ -204,8 +204,8 @@ $Comp
 L Connector:Conn_01x06_Male J1
 U 1 1 5C46621E
 P 6250 3850
-F 0 "J1" H 6223 3730 50  0000 R CNN
-F 1 "goldpin 1x6" H 6223 3821 50  0000 R CNN
+F 0 "J1" H 6400 4300 50  0000 R CNN
+F 1 "goldpin 1x6" H 6200 4300 50  0000 R CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Horizontal" H 6250 3850 50  0001 C CNN
 F 3 "~" H 6250 3850 50  0001 C CNN
 	1    6250 3850
