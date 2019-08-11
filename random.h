@@ -43,4 +43,6 @@ volatile uint16 holdandreleasetime[NUM_ACTIONS];
 // indeksy 0,2,4 to czasy WIBROWANIA silnikiem/TRZYMANIA przycisku
 // indeksy 1,3 to czasy PRZERW w wibrowaniu silnikiem/PUSZCZENIA przycisku
 
+volatile int16 time_diffrence[NUM_ACTIONS];
+
 #endif /* RANDOM_H_ */

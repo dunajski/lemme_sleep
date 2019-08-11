@@ -73,6 +73,18 @@ typedef struct PortDBits
 #define LEVER_PRESSED   (!LEVER_VAL)
 #define LEVER_UNPRESSED (LEVER_VAL)
 
+typedef struct
+{
+  uint16 hnr_time[5];
+  uint16 rnd_time[5];
+  int16 diff_time[5];
+  uint32 whole_user_sequence;
+  uint32 whole_random_sequence;
+  uint8 current_act;
+
+} LastSequence;
+
+extern LastSequence Sequence;
 /*
  *******************************************************************************
  * Funkcja do zmiany wartosci 16bitowej w bloku, uniemozliwiajacym nadpisanie

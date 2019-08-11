@@ -6,6 +6,7 @@
  */
 
 #include <avr/interrupt.h>
+#include <string.h>
 #include "random.h"
 #include "energy.h"
 
@@ -87,13 +88,26 @@ static void FillRandomValues(volatile uint16 random_values_grouped[NUM_ACTIONS],
 {
   uint8 i;
   random_values_grouped[0] = random_values[0] + (1 << random_values[1]) + (2 << random_values[2]);
-  random_values_grouped[1] = random_values[3] + (1 << random_values[4]);
+//  random_values_grouped[1] = random_values[3] + (1 << random_values[4]);
+  random_values_grouped[1] = 0x02;
   random_values_grouped[2] = random_values[5] + (1 << random_values[6]) + (2 << random_values[7]);
-  random_values_grouped[3] = random_values[8] + (1 << random_values[9]);
+//  random_values_grouped[3] = random_values[8] + (1 << random_values[9]);
+  random_values_grouped[3] = 0x02;
   random_values_grouped[4] = random_values[10] + (1 << random_values[11]) + (2 << random_values[12]);
 
   for (i = 0; i < NUM_ACTIONS; i++)
     random_values_grouped[i] *= 500;
+
+  memcpy((void *)Sequence.rnd_time, (void *)random_values_grouped,
+         (sizeof(Sequence.rnd_time)));
+
+  #if DEBUG_STATE == _ON
+  for (int k = 0; k < NUM_ACTIONS; k++)
+  {
+    PutUInt16ToSerial(Sequence.rnd_time[k], 1, 5);
+    StrToSerial("\n");
+  }
+  #endif
 }
 
 /*
@@ -178,7 +192,7 @@ ISR(ADC_vect)
 
 }
 
-#define VCC_3V6_ADC_VAL 720UL // wartosc przetwornika dla napiecia 3V6, dzielnik napiecia i Vref 2,56V
+#define VCC_3V6_ADC_VAL 520UL // wartosc przetwornika dla napiecia 3V6, dzielnik napiecia i Vref 2,56V
 /*
  *******************************************************************************
  * Obliczenie rejestru OCR1A dla Timer1, zaleznie od napiecia zasilania, zeby

@@ -21,7 +21,7 @@
 
 volatile uint16 * hnr_time_ptr = holdandreleasetime;
 
-static uint8 EstimateActivity(volatile uint16 hnr_time[],volatile uchar rnd_values[], uint8 current_activity);
+static uint8 EstimateActivity(uint8 current_activity);
 
 // stany przycisku podczas odliczania czasu wcisnieta i puszczenia dla stanu ST_INTERAKCJA
 typedef enum
@@ -34,6 +34,8 @@ typedef enum
   BUTTON_HOLDED_TOO_LONG,   // stan po przekroczeniu maks czasu wcisniecia (10 s)
   BUTTON_RELEASED_TOO_LONG  // stan po przekroczeniu maks czasu puszczenia (10 s)
 } TKeyInterakcjastates;
+
+LastSequence Sequence;
 
 /*
  *******************************************************************************
@@ -217,7 +219,7 @@ void InitIOs(void)
 #define TIME_120SECS (600000UL) // 0,2 ms * 600 000 = 120 sekund
 #define TIME_20SECS (100000UL)
 #define PRESS_TO_WAKE_UP_COUNT (3)
-#define ISR_DEBOUNCE_CNT (600) // 200 * 0,2 ms = 40 ms
+#define ISR_DEBOUNCE_CNT (200) // 200 * 0,2 ms = 40 ms
 
 /*
  *******************************************************************************
@@ -275,9 +277,8 @@ ISR(TIMER2_COMP_vect)
 
             case ST_INTERAKCJA:
               // odbieranie sekwencji od uzytkownika w inny miejscu
-            break;
-
             case ST_POWER_DWN:
+            case ST_MIERZENIE_ZASILANIA:
             case ST_WIBROWANIE: // w trakcie wibrowania nie obchodzi nas czy ktos klika
             case ST_OCENA:
             case ST_LOSOWANIE:
@@ -348,6 +349,7 @@ ISR(TIMER2_COMP_vect)
     // maks dlugosci i potraktuj jako koniec sekwencji
     if (sequence_time >= TIME_20SECS)
     {
+      sequence_time = 0;
       // TODO: zastanwow sie co wtedy
     }
 
@@ -498,9 +500,26 @@ ISR(TIMER2_COMP_vect)
       {
         button_state_time = 0;
         // przesun na poczatek
-        hnr_time_ptr= holdandreleasetime;
+        hnr_time_ptr = holdandreleasetime;
+
+        // zmniejszam rozdzielczosc danych
+        for (int k = 0; k < NUM_ACTIONS; k++)
+          holdandreleasetime[k] /= 5;
+
+        // kopiuje dane do struktury
+        memcpy((void *)Sequence.hnr_time, (void *)holdandreleasetime,
+               (sizeof(Sequence.hnr_time)));
+
         #if DEBUG_STATE == _ON
-        StrToSerial("Interakcja nr:");
+        for (int k = 0; k < NUM_ACTIONS; k++)
+        {
+          PutUInt16ToSerial(Sequence.hnr_time[k], TRUE, 5);
+          StrToSerial("\n");
+        }
+        #endif
+
+        #if DEBUG_STATE == _ON
+        StrToSerial("\nInterakcja nr:");
         how_many_times_sent++;
         PutUInt8ToSerial(how_many_times_sent);
         StrToSerial("\n");
@@ -518,7 +537,7 @@ ISR(TIMER2_COMP_vect)
 
       // dziele przez 5 bo przerwanie jest co 0,2ms czyli 2/10 => 1/5 w taki sposob uzyskuje wartosc
       // w ms
-      PutUInt16ToSerial(*hnr_time_ptr / 5, TRUE, 5);
+      PutUInt16ToSerial(*hnr_time_ptr, TRUE, 5);
       // kasuje wartosc, przygotwuje na kolejna interakcje
       StrToSerial(" ms\n");
       #endif
@@ -552,9 +571,9 @@ ISR(TIMER2_COMP_vect)
     goto_sleep_delay++;
     if (goto_sleep_delay == 10)
     {
-      activity_rate = EstimateActivity(holdandreleasetime, random_values, activity_rate);
+      activity_rate = EstimateActivity(activity_rate);
       #if DEBUG_STATE == _ON
-      StrToSerial("Aktualna aktywnosc:");
+      StrToSerial("\nAktualna aktywnosc:");
       PutUInt8ToSerial(activity_rate);
       StrToSerial("\nOcena niezaimplementowana, usypianie\n");
       #endif
@@ -579,15 +598,34 @@ ISR(TIMER2_COMP_vect)
  * probka z przetwornika i poprzednia aktywnoscia. Po wyliczeniu,
  * czyscic obie tablice.
  * [in] uint16[] hnr_time - wskaznik na tablice z wynikami hold and release
- * [in] uint16[] rnd_values - wskaznik na tablice z wynikami losowania
+ * [in] uint16[] rnd_values - wskaznik na tablice z dlugosciami sekwencji
  * [in] uint8 current_activity - aktywnosc z uwzglednieniem poprzednich akcji
  * [out] uint8 - estymowana aktywnosc
  *******************************************************************************
  */
-static uint8 EstimateActivity(volatile uint16 hnr_time[], volatile uchar rnd_values[], uint8 current_activity)
+static uint8 EstimateActivity(uint8 current_activity)
 {
-  // there is a measure time of interaction and ive got random time
-  // extend random values to interaction resolution
-  // substract them and change activity and then finally change device state
-  return current_activity;
+  uint8 i;
+
+  Sequence.whole_random_sequence = 0;
+  Sequence.whole_user_sequence = 0;
+
+  StrToSerial("\nRoznice:");
+
+  for (i = 0; i < NUM_ACTIONS; i++)
+  {
+    Sequence.diff_time[i] = (int16)(Sequence.rnd_time[i] - Sequence.hnr_time[i]);
+    #if DEBUG_STATE == _ON
+    StrToSerial("\n");
+    PutSInt16ToSerial(Sequence.diff_time[i], TRUE, 6);
+    #endif
+    Sequence.whole_user_sequence += Sequence.hnr_time[i]; // liczylem nie bedzie OVF
+    Sequence.whole_random_sequence += Sequence.rnd_time[i]; // liczylem nie bedzie OVF
+  }
+
+  StrToSerial("\nsekwencja:");
+  PutUInt32ToSerial(Sequence.whole_random_sequence, FALSE, 7);
+  StrToSerial("\nodpowiedz:");
+  PutUInt32ToSerial(Sequence.whole_user_sequence, FALSE, 7);
+  return current_activity++;
 }

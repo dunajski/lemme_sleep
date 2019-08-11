@@ -45,9 +45,58 @@ void PutUInt16ToSerial(uint16 value, uchar leading_zeros, uchar size)
   how_many_digits = ConvertUInt16ToAscii(value, ascii, leading_zeros, size);
 
   for (int i = 0; i < how_many_digits; i++)
-  {
     PutToSerial(ascii[i]);
+}
+
+#define _SINT16_MAX_ASCII_DIGITS 6
+/*
+ *******************************************************************************
+ * Umozliwia wyslanie zmiennej ze znakiem o wielkosci 16b w postaci ASCII.
+ * [in] uint16 value - wartosc liczbowa do wyslania,
+ * [in] uchar leading_zeros - umozliwia wyslanie zer poprzedzajacych,
+ * [in] uchar size - ilosc znakow do wyslania,
+ * [out] uint8 - ilosc wyslanych znakow.
+ *******************************************************************************
+ */
+void PutSInt16ToSerial(int16 value, uchar leading_zeros, uchar size)
+{
+  uint8 how_many_digits = 0;
+  uint8 ascii[_SINT16_MAX_ASCII_DIGITS];
+  uint8 i = 0;
+
+  if (0 > value)
+  {
+    value = value * (-1);
+    PutToSerial('-');
+    i++;
   }
+
+  how_many_digits = ConvertUInt16ToAscii((uint16)value, ascii, leading_zeros, size);
+
+  for (; i < how_many_digits; i++)
+    PutToSerial(ascii[i]);
+}
+
+#define _UINT32_MAX_ASCII_DIGITS 10
+/*
+ *******************************************************************************
+ * Umozliwia wyslanie zmiennej ze znakiem o wielkosci 32b w postaci ASCII.
+ * [in] uint32 value - wartosc liczbowa do wyslania,
+ * [in] uchar leading_zeros - umozliwia wyslanie zer poprzedzajacych,
+ * [in] uchar size - ilosc znakow do wyslania,
+ * [out] uint8 - ilosc wyslanych znakow.
+ *******************************************************************************
+ */
+void PutUInt32ToSerial(uint32 value, uchar leading_zeros, uchar size)
+{
+  uint8 how_many_digits = 0;
+  uint8 ascii[_UINT32_MAX_ASCII_DIGITS];
+  uint8 i = 0;
+
+  how_many_digits = ConverUInt32ToAscii(value, ascii, leading_zeros, size);
+
+  for (i = 0; i < how_many_digits; i++)
+    PutToSerial(ascii[i]);
 }
 
 // maks moze byc 10, ale dodaje w buforze jedno miejsce na '-'
@@ -55,7 +104,7 @@ void PutUInt16ToSerial(uint16 value, uchar leading_zeros, uchar size)
 /*
  *******************************************************************************
  * Umozliwia wyslanie zmiennej ze znakiem o wielkosci 32b w postaci ASCII.
- * [in] uint32 value - wartosc liczbowa do wyslania,
+ * [in] sint32 value - wartosc liczbowa do wyslania,
  * [in] uchar leading_zeros - umozliwia wyslanie zer poprzedzajacych,
  * [in] uchar size - ilosc znakow do wyslania,
  * [out] uint8 - ilosc wyslanych znakow.
@@ -77,9 +126,7 @@ void PutSInt32ToSerial(int32 value, uchar leading_zeros, uchar size)
   how_many_digits = ConverUInt32ToAscii((uint32)value, ascii, leading_zeros, size);
 
   for (; i < how_many_digits; i++)
-  {
     PutToSerial(ascii[i]);
-  }
 }
 
 /*
@@ -155,7 +202,7 @@ static uint8 ConverUInt32ToAscii(uint32 value, uchar * buffer, uchar leading_zer
   return leading_zeros ? size : length;
 }
 
-#define FIFO_LEN 256 // dlugosc kolejek FIFO
+#define FIFO_LEN 512 // dlugosc kolejek FIFO
 
 struct
 {
