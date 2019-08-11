@@ -35,8 +35,30 @@ void PutUInt16ToSerial(uint16  value, uchar leading_zeros, uchar size);
 
 /*
  *******************************************************************************
+ * Umozliwia wyslanie zmiennej ze znakiem o wielkosci 16b w postaci ASCII.
+ * [in] uint16 value - wartosc liczbowa do wyslania,
+ * [in] uchar leading_zeros - umozliwia wyslanie zer poprzedzajacych,
+ * [in] uchar size - ilosc znakow do wyslania,
+ * [out] uint8 - ilosc wyslanych znakow.
+ *******************************************************************************
+ */
+void PutSInt16ToSerial(int16 value, uchar leading_zeros, uchar size);
+
+/*
+ *******************************************************************************
  * Umozliwia wyslanie zmiennej ze znakiem o wielkosci 32b w postaci ASCII.
  * [in] uint32 value - wartosc liczbowa do wyslania,
+ * [in] uchar leading_zeros - umozliwia wyslanie zer poprzedzajacych,
+ * [in] uchar size - ilosc znakow do wyslania,
+ * [out] uint8 - ilosc wyslanych znakow.
+ *******************************************************************************
+ */
+void PutUInt32ToSerial(uint32 value, uchar leading_zeros, uchar size);
+
+/*
+ *******************************************************************************
+ * Umozliwia wyslanie zmiennej ze znakiem o wielkosci 32b w postaci ASCII.
+ * [in] sint32 value - wartosc liczbowa do wyslania,
  * [in] uchar leading_zeros - umozliwia wyslanie zer poprzedzajacych,
  * [in] uchar size - ilosc znakow do wyslania,
  * [out] uint8 - ilosc wyslanych znakow.
