@@ -12,6 +12,9 @@
 #include "random.h"
 #include "types.h"
 
+#define NUM_RND     13
+#define NUM_ACTIONS  5
+
 typedef struct PortABits
 {
   volatile uchar adc_pin :1;    // PA 0 losowanie
@@ -75,11 +78,13 @@ typedef struct PortDBits
 
 typedef struct
 {
-  uint16 hnr_time[5];
-  uint16 rnd_time[5];
-  int16 diff_time[5];
+  uint16 hnr_time[NUM_ACTIONS];
+  uint16 rnd_time[NUM_ACTIONS];
+  uint16 extended_user_seq[NUM_ACTIONS];
+  int16 diff_time[NUM_ACTIONS];
   uint32 whole_user_sequence;
   uint32 whole_random_sequence;
+  uint32 whole_extended_user_seq;
   uint8 current_act;
 
 } LastSequence;

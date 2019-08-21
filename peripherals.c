@@ -591,6 +591,35 @@ ISR(TIMER2_COMP_vect)
 
 }
 
+uint32 CalcBeta(LastSequence sequence)
+{
+  int i;
+  uint32 beta_sum = 0;
+
+  for (i = 0; i < NUM_ACTIONS; i++)
+  {
+    if ((sequence.extended_user_seq[i] - sequence.rnd_time[i]) < 0)
+      beta_sum += (sequence.extended_user_seq[i] - sequence.rnd_time[i]) * -1;
+    else
+      beta_sum += sequence.extended_user_seq[i] - sequence.rnd_time[i];
+  }
+  return beta_sum;
+}
+
+
+uint32 CalcGamma(LastSequence sequence)
+{
+  uint32 gamma_sum = 0;
+
+  if ((sequence.whole_random_sequence - sequence.whole_extended_user_seq) < 0)
+    gamma_sum = (sequence.whole_random_sequence - sequence.whole_extended_user_seq) * -1;
+  else
+    gamma_sum = (sequence.whole_random_sequence - sequence.whole_extended_user_seq);
+
+  gamma_sum /= sequence.whole_random_sequence;
+
+  return gamma_sum;
+}
 // TODO: ponizsze do zrobienia
 /*
  *******************************************************************************
@@ -606,9 +635,14 @@ ISR(TIMER2_COMP_vect)
 static uint8 EstimateActivity(uint8 current_activity)
 {
   uint8 i;
+  uint8 activity = 0;
+  float alfa = 0;
+  uint8 beta = 2, gamma = 1;
+  uint32 beta_fractor, gamma_fractor; // rownanie
 
   Sequence.whole_random_sequence = 0;
   Sequence.whole_user_sequence = 0;
+  Sequence.whole_extended_user_seq = 0;
 
   StrToSerial("\nRoznice:");
 
@@ -623,9 +657,23 @@ static uint8 EstimateActivity(uint8 current_activity)
     Sequence.whole_random_sequence += Sequence.rnd_time[i]; // liczylem nie bedzie OVF
   }
 
+  #if DEBUG_STATE == _ON
   StrToSerial("\nsekwencja:");
   PutUInt32ToSerial(Sequence.whole_random_sequence, FALSE, 7);
   StrToSerial("\nodpowiedz:");
   PutUInt32ToSerial(Sequence.whole_user_sequence, FALSE, 7);
-  return current_activity++;
+  #endif
+
+  alfa = (float)Sequence.whole_random_sequence / Sequence.whole_user_sequence;
+  Sequence.whole_extended_user_seq = Sequence.whole_user_sequence * alfa;
+
+  for (i = 0; i < NUM_ACTIONS; i++)
+    Sequence.extended_user_seq[i] = alfa * Sequence.rnd_time[i];
+
+  beta_fractor = CalcBeta(Sequence);
+  gamma_fractor = CalcGamma(Sequence);
+
+  activity = current_activity - beta * beta_fractor - gamma * gamma_fractor;
+
+  return activity;
 }
