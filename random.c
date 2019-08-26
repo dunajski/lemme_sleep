@@ -101,13 +101,13 @@ static void FillRandomValues(volatile uint16 random_values_grouped[NUM_ACTIONS],
   memcpy((void *)Sequence.rnd_time, (void *)random_values_grouped,
          (sizeof(Sequence.rnd_time)));
 
-  #if DEBUG_STATE == _ON
-  for (int k = 0; k < NUM_ACTIONS; k++)
-  {
-    PutUInt16ToSerial(Sequence.rnd_time[k], 1, 5);
-    StrToSerial("\n");
-  }
-  #endif
+//  #if DEBUG_STATE == _ON
+//  for (int k = 0; k < NUM_ACTIONS; k++)
+//  {
+//    PutUInt16ToSerial(Sequence.rnd_time[k], 1, 5);
+//    StrToSerial("\n");
+//  }
+//  #endif
 }
 
 /*

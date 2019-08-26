@@ -16,7 +16,7 @@
 #include "energy.h"
 
 
-#define TRUE (1)
+#define TRUE  (1)
 #define FALSE (0)
 
 volatile uint16 * hnr_time_ptr = holdandreleasetime;
@@ -246,7 +246,7 @@ ISR(TIMER2_COMP_vect)
   static uint8  how_many_times_sent = 0;
   static uint8  activity_rate;
 
-  static uint16 goto_sleep_delay = 0; // test
+  static uint16 delay_before_sleep_cnt = 0;
 
   // Obsluga przycisku dla wszystkich stanow
   if (keycnt == 0)
@@ -492,9 +492,6 @@ ISR(TIMER2_COMP_vect)
     if (saved_states >= NUM_ACTIONS)
     {
 
-      // TODO przekopiuj do tablic i ustaw ocene
-      // wyzeruj tablice robocza
-
       // przed pierwszym holdem wyswietl liczbe kolejnej odebranej interakcji
       if (index == 0)
       {
@@ -507,14 +504,13 @@ ISR(TIMER2_COMP_vect)
           holdandreleasetime[k] /= 5;
 
         // kopiuje dane do struktury
-        memcpy((void *)Sequence.hnr_time, (void *)holdandreleasetime,
-               (sizeof(Sequence.hnr_time)));
+        memcpy((void *)Sequence.hnr_time, (void *)holdandreleasetime, (sizeof(Sequence.hnr_time)));
 
         #if DEBUG_STATE == _ON
         for (int k = 0; k < NUM_ACTIONS; k++)
         {
-          PutUInt16ToSerial(Sequence.hnr_time[k], TRUE, 5);
-          StrToSerial("\n");
+//          PutUInt16ToSerial(Sequence.hnr_time[k], TRUE, 5);
+//          StrToSerial("\n");
         }
         #endif
 
@@ -542,8 +538,7 @@ ISR(TIMER2_COMP_vect)
       StrToSerial(" ms\n");
       #endif
 
-      *hnr_time_ptr = 0;
-      hnr_time_ptr++;
+      *hnr_time_ptr++ = 0;
       index++;
     }
 
@@ -567,23 +562,19 @@ ISR(TIMER2_COMP_vect)
   // Obsluga stanu INTERAKCJA po wylosowaniu i wibrowaniu silnika
   if (device_state == ST_OCENA)
   {
-    LEVER_DIR = 1;
-    goto_sleep_delay++;
-    if (goto_sleep_delay == 10)
+    delay_before_sleep_cnt++;
+    if (delay_before_sleep_cnt == 10)
     {
       activity_rate = EstimateActivity(activity_rate);
       #if DEBUG_STATE == _ON
-      StrToSerial("\nAktualna aktywnosc:");
       PutUInt8ToSerial(activity_rate);
       StrToSerial("\nOcena niezaimplementowana, usypianie\n");
       #endif
     }
 
-    // opoznij przejscie o 2,5 s zeby wszystko sie wyslalo
-    if (goto_sleep_delay >= 5000)
+    if (delay_before_sleep_cnt >= UINT16_MAX/2)
     {
-      LEVER_DIR = 0;
-      goto_sleep_delay = 0;
+      delay_before_sleep_cnt = 0;
       device_state = ST_POWER_DWN;
     }
   }
@@ -606,7 +597,6 @@ uint32 CalcBeta(LastSequence sequence)
   return beta_sum;
 }
 
-
 uint32 CalcGamma(LastSequence sequence)
 {
   uint32 gamma_sum = 0;
@@ -620,7 +610,7 @@ uint32 CalcGamma(LastSequence sequence)
 
   return gamma_sum;
 }
-// TODO: ponizsze do zrobienia
+
 /*
  *******************************************************************************
  * Ocenia aktywnosc uzytkownika na podstawe roznic pomiedzy interakcja, losowa
@@ -672,6 +662,13 @@ static uint8 EstimateActivity(uint8 current_activity)
 
   beta_fractor = CalcBeta(Sequence);
   gamma_fractor = CalcGamma(Sequence);
+
+  #if DEBUG_STATE == _ON
+  StrToSerial("\nBeta:");
+  PutUInt32ToSerial(beta_fractor, FALSE, 7);
+  StrToSerial("\nGamma:");
+  PutUInt32ToSerial(gamma_fractor, FALSE, 7);
+  #endif
 
   activity = current_activity - beta * beta_fractor - gamma * gamma_fractor;
 
