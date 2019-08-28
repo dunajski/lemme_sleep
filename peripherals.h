@@ -86,7 +86,6 @@ typedef struct
   uint32 whole_random_sequence;
   uint32 whole_extended_user_seq;
   uint8 current_act;
-
 } LastSequence;
 
 extern LastSequence Sequence;

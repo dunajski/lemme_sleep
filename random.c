@@ -43,7 +43,7 @@ ISR(TIMER0_COMP_vect)
   if (device_state == ST_WIBROWANIE)
   {
 
-    if (rnd_val_cnt >= (random_values_grouped[rnd_val_gr_idx]/10))
+    if (rnd_val_cnt >= (random_values_grouped[rnd_val_gr_idx] / 10))
     {
       rnd_val_cnt = 0;
       rnd_val_gr_idx++;
@@ -74,8 +74,6 @@ ISR(TIMER0_COMP_vect)
   }
 
 }
-volatile float wynik;
-
 
 /*
  *******************************************************************************
@@ -119,6 +117,7 @@ static void FillRandomValues(volatile uint16 random_values_grouped[NUM_ACTIONS],
 //  #endif
 }
 
+volatile float wynik;
 /*
  *******************************************************************************
  * Przerwanie odpowiedzialne za wylosowanie probek, zeby co interakcje dostac
@@ -211,7 +210,6 @@ ISR(ADC_vect)
  */
 static void SetOCRForProperVoltage(uint16 adc_voltage)
 {
-  //TODO: testuj najpierw miernikiem zeby nie wylozyc silnika!
   uint32 OCR_set_val = 0x000000FF;
   // 0xFFFF na przetworniku daje 2,56 V
   // Dzielnik napiecia bedzie na zasilaniu, a wiec wszystko na pol czyli dla

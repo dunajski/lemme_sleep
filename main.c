@@ -25,7 +25,7 @@ int main(void)
   while (1)
   {
     // zaczynamy od pojscia spac i oczekujemy wybudzenia trzykrotnym nacisnieciem dzwigni
-    if (device_state == ST_POWER_DWN)
+    if (device_state == ST_ENERGY_SAVING)
       GoToSleep();
   }
 

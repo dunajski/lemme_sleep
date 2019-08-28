@@ -46,6 +46,7 @@ LastSequence Sequence;
  */
 void GoToSleep(void)
 {
+  cli();
   // Wylaczenie przerwan od innych peryferiow, zeby moc wybudzac tylko EXT0
   TIMSK  &= ~(1 << OCIE0);
   TIMSK  &= ~(1 << OCIE2);
@@ -54,6 +55,7 @@ void GoToSleep(void)
   UCSRB  &= ~(1 << UDRIE);
 
   STATE_LED_ON;
+  device_state = ST_POWER_DOWN;
 
   // Zezwol na przerwanie od EXT0 zeby moc wybudzic
   GICR |= (1 << INT0);
@@ -212,14 +214,14 @@ void InitIOs(void)
   PWR_ADC_DIR     = 0;
   PWR_ADC_PULLUP  = 1;
 
-  device_state = ST_POWER_DWN; // ropoczynamy od stanu uspienia
+  device_state = ST_ENERGY_SAVING; // ropoczynamy od stanu uspienia
 }
 
 #define TIME_10SECS (50000UL) // 0,2 ms * 50 000 = 10 sekund
 #define TIME_120SECS (600000UL) // 0,2 ms * 600 000 = 120 sekund
 #define TIME_20SECS (100000UL)
 #define PRESS_TO_WAKE_UP_COUNT (3)
-#define ISR_DEBOUNCE_CNT (200) // 200 * 0,2 ms = 40 ms
+#define ISR_DEBOUNCE_CNT (300) // 300 * 0,2 ms = 60 ms
 
 /*
  *******************************************************************************
@@ -277,7 +279,7 @@ ISR(TIMER2_COMP_vect)
 
             case ST_INTERAKCJA:
               // odbieranie sekwencji od uzytkownika w inny miejscu
-            case ST_POWER_DWN:
+            case ST_POWER_DOWN:
             case ST_MIERZENIE_ZASILANIA:
             case ST_WIBROWANIE: // w trakcie wibrowania nie obchodzi nas czy ktos klika
             case ST_OCENA:
@@ -292,7 +294,7 @@ ISR(TIMER2_COMP_vect)
       break;
 
       case 2:
-        if (LEVER_VAL == 1)
+        if (LEVER_UNPRESSED)
           keylev = 0;
       break;
     }
@@ -309,7 +311,7 @@ ISR(TIMER2_COMP_vect)
     {
       wake_up_timer = 0;
       wake_up_cnt = 0;
-      device_state = ST_POWER_DWN;
+      device_state = ST_ENERGY_SAVING;
     }
 
     if (wake_up_cnt >= PRESS_TO_WAKE_UP_COUNT)
@@ -350,7 +352,7 @@ ISR(TIMER2_COMP_vect)
     if (sequence_time >= TIME_20SECS)
     {
       sequence_time = 0;
-      // TODO: zastanwow sie co wtedy
+      // TODO: zastanow sie co wtedy
     }
 
     if (!keycnt2 && (saved_states < NUM_ACTIONS))
@@ -363,9 +365,8 @@ ISR(TIMER2_COMP_vect)
         keycnt2 = ISR_DEBOUNCE_CNT;
         key_state_interakcja = BUTTON_PRESSED;
       }
-
       // sprawdzamy czy po debounce przycisk wciaz jest przycisniety
-      if (key_state_interakcja == BUTTON_PRESSED)
+      else if (key_state_interakcja == BUTTON_PRESSED)
       {
         if (LEVER_PRESSED)
         {
@@ -575,7 +576,7 @@ ISR(TIMER2_COMP_vect)
     if (delay_before_sleep_cnt >= UINT16_MAX/2)
     {
       delay_before_sleep_cnt = 0;
-      device_state = ST_POWER_DWN;
+      device_state = ST_ENERGY_SAVING;
     }
   }
   //============================================================================
