@@ -11,7 +11,7 @@
 #include "energy.h"
 
 // temporary values.
-volatile uint16 random_values_grouped[NUM_ACTIONS] = {5000, 5000, 5000, 5000, 5000};
+volatile uint16 random_values_grouped[MAX_NUM_ACTIONS] = {5000, 5000, 5000, 5000, 5000};
 volatile uchar change_random = 0;
 
 /*
@@ -63,7 +63,7 @@ ISR(TIMER0_COMP_vect)
 
     rnd_val_cnt++;
 
-    if (rnd_val_gr_idx >= NUM_ACTIONS)
+    if (rnd_val_gr_idx >= num_actions)
     {
       rnd_val_gr_idx = 0;
       device_state = ST_INTERAKCJA;
@@ -81,7 +81,7 @@ ISR(TIMER0_COMP_vect)
  * interakcji
  *******************************************************************************
  */
-static void FillRandomValues(volatile uint16 random_values_grouped[NUM_ACTIONS],
+static void FillRandomValues(volatile uint16 random_values_grouped[MAX_NUM_ACTIONS],
                              volatile uchar random_values[NUM_RND])
 {
   uint8 i;
@@ -95,21 +95,22 @@ static void FillRandomValues(volatile uint16 random_values_grouped[NUM_ACTIONS],
 //  random_values_grouped[3] = 0x02;
 //  random_values_grouped[4] = random_values[10] + (1 << random_values[11]) + (2 << random_values[12]);
 
-//  for (i = 0; i < NUM_ACTIONS; i++)
+//  for (i = 0; i < MAX_NUM_ACTIONS; i++)
 //    random_values_grouped[i] *= 500;
 
 
-  for (i = 0; i < NUM_ACTIONS; i++)
+  for (i = 0; i < MAX_NUM_ACTIONS; i++)
   {
     random_values_grouped[i] = random_values[2 * i] * 1500 + random_values[2 * i + 1] * 1500 + 1000;
   }
+
   random_values_grouped[1] = 1000;
   random_values_grouped[3] = 1000;
 
-    memcpy((void *)Sequence.rnd_time, (void *)random_values_grouped, (sizeof(Sequence.rnd_time)));
+  memcpy((void *)Sequence.rnd_time, (void *)random_values_grouped, (sizeof(Sequence.rnd_time)));
 
 //  #if DEBUG_STATE == _ON
-//  for (int k = 0; k < NUM_ACTIONS; k++)
+//  for (int k = 0; k < MAX_NUM_ACTIONS; k++)
 //  {
 //    PutUInt16ToSerial(Sequence.rnd_time[k], 1, 5);
 //    StrToSerial("\n");

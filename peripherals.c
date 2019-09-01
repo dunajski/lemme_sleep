@@ -220,8 +220,11 @@ void InitIOs(void)
 #define TIME_10SECS (50000UL) // 0,2 ms * 50 000 = 10 sekund
 #define TIME_120SECS (600000UL) // 0,2 ms * 600 000 = 120 sekund
 #define TIME_20SECS (100000UL)
+#define TIME_30SECS (150000UL)
 #define PRESS_TO_WAKE_UP_COUNT (3)
 #define ISR_DEBOUNCE_CNT (300) // 300 * 0,2 ms = 60 ms
+
+volatile uint8  num_actions = 5; // 5 = 3H2R, 3 = 2H1R
 
 /*
  *******************************************************************************
@@ -249,6 +252,16 @@ ISR(TIMER2_COMP_vect)
   static uint8  activity_rate;
 
   static uint16 delay_before_sleep_cnt = 0;
+
+  // musza byc niepatrzyste
+  if ((num_actions % 2) != 1)
+    num_actions--;
+  // zabezpieczenie przed przepelnieniem albo zanizeniem minimalnej ilosci akcji
+  // moze byc albo 1 albo 3 albo
+  if (num_actions > 5)
+    num_actions = 5;
+  else if (num_actions < 3)
+    num_actions = 3;
 
   // Obsluga przycisku dla wszystkich stanow
   if (keycnt == 0)
@@ -349,13 +362,12 @@ ISR(TIMER2_COMP_vect)
 
     // jesli czas sekewencji przekroczono wpisz do wszystkich
     // maks dlugosci i potraktuj jako koniec sekwencji
-    if (sequence_time >= TIME_20SECS)
+    if (sequence_time >= TIME_30SECS)
     {
       sequence_time = 0;
-      // TODO: zastanow sie co wtedy
     }
 
-    if (!keycnt2 && (saved_states < NUM_ACTIONS))
+    if (!keycnt2 && (saved_states < num_actions))
     {
       // aby rozpoczac mierzenie hold and release musi byc stan init, zeby mozna bylo rozpoczac
       // mierzenie od wcisniecia, a wiec oczekuje na wcisniecie przycisku
@@ -490,7 +502,7 @@ ISR(TIMER2_COMP_vect)
     }
 
     // jesli zapisano piec stanow 3H i 2R to zakoncz i przejdz do oceny
-    if (saved_states >= NUM_ACTIONS)
+    if (saved_states >= num_actions)
     {
 
       // przed pierwszym holdem wyswietl liczbe kolejnej odebranej interakcji
@@ -501,14 +513,14 @@ ISR(TIMER2_COMP_vect)
         hnr_time_ptr = holdandreleasetime;
 
         // zmniejszam rozdzielczosc danych
-        for (int k = 0; k < NUM_ACTIONS; k++)
+        for (int k = 0; k < MAX_NUM_ACTIONS; k++)
           holdandreleasetime[k] /= 5;
 
         // kopiuje dane do struktury
         memcpy((void *)Sequence.hnr_time, (void *)holdandreleasetime, (sizeof(Sequence.hnr_time)));
 
         #if DEBUG_STATE == _ON
-        for (int k = 0; k < NUM_ACTIONS; k++)
+        for (int k = 0; k < MAX_NUM_ACTIONS; k++)
         {
 //          PutUInt16ToSerial(Sequence.hnr_time[k], TRUE, 5);
 //          StrToSerial("\n");
@@ -539,11 +551,12 @@ ISR(TIMER2_COMP_vect)
       StrToSerial(" ms\n");
       #endif
 
+      // kasuj wartosci wylosowane
       *hnr_time_ptr++ = 0;
       index++;
     }
 
-  if (index >= NUM_ACTIONS)
+  if (index >= num_actions)
   {
     key_state_interakcja = INITIAL_KEY_STATE;
     saved_states = 0;
@@ -588,7 +601,7 @@ uint32 CalcBeta(LastSequence sequence)
   int i;
   uint32 beta_sum = 0;
 
-  for (i = 0; i < NUM_ACTIONS; i++)
+  for (i = 0; i < MAX_NUM_ACTIONS; i++)
   {
     if ((sequence.extended_user_seq[i] - sequence.rnd_time[i]) < 0)
       beta_sum += (sequence.extended_user_seq[i] - sequence.rnd_time[i]) * -1;
@@ -635,9 +648,11 @@ static uint8 EstimateActivity(uint8 current_activity)
   Sequence.whole_user_sequence = 0;
   Sequence.whole_extended_user_seq = 0;
 
+  #if DEBUG_STATE == _ON
   StrToSerial("\nRoznice:");
+  #endif
 
-  for (i = 0; i < NUM_ACTIONS; i++)
+  for (i = 0; i < MAX_NUM_ACTIONS; i++)
   {
     Sequence.diff_time[i] = (int16)(Sequence.rnd_time[i] - Sequence.hnr_time[i]);
     #if DEBUG_STATE == _ON
@@ -658,7 +673,7 @@ static uint8 EstimateActivity(uint8 current_activity)
   alfa = (float)Sequence.whole_random_sequence / Sequence.whole_user_sequence;
   Sequence.whole_extended_user_seq = Sequence.whole_user_sequence * alfa;
 
-  for (i = 0; i < NUM_ACTIONS; i++)
+  for (i = 0; i < MAX_NUM_ACTIONS; i++)
     Sequence.extended_user_seq[i] = alfa * Sequence.rnd_time[i];
 
   beta_fractor = CalcBeta(Sequence);

@@ -13,7 +13,7 @@
 #include "types.h"
 
 #define NUM_RND     13
-#define NUM_ACTIONS  5
+#define MAX_NUM_ACTIONS  5
 
 typedef struct PortABits
 {
@@ -78,10 +78,10 @@ typedef struct PortDBits
 
 typedef struct
 {
-  uint16 hnr_time[NUM_ACTIONS];
-  uint16 rnd_time[NUM_ACTIONS];
-  uint16 extended_user_seq[NUM_ACTIONS];
-  int16 diff_time[NUM_ACTIONS];
+  uint16 hnr_time[MAX_NUM_ACTIONS];
+  uint16 rnd_time[MAX_NUM_ACTIONS];
+  uint16 extended_user_seq[MAX_NUM_ACTIONS];
+  int16 diff_time[MAX_NUM_ACTIONS];
   uint32 whole_user_sequence;
   uint32 whole_random_sequence;
   uint32 whole_extended_user_seq;
@@ -89,6 +89,9 @@ typedef struct
 } LastSequence;
 
 extern LastSequence Sequence;
+
+extern volatile uint8 num_actions;
+
 /*
  *******************************************************************************
  * Funkcja do zmiany wartosci 16bitowej w bloku, uniemozliwiajacym nadpisanie
