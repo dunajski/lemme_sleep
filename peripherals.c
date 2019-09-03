@@ -21,7 +21,7 @@
 
 volatile uint16 * hnr_time_ptr = holdandreleasetime;
 
-static uint8 EstimateActivity(uint8 current_activity);
+static uint32 EstimateActivity(uint32 current_activity);
 
 // stany przycisku podczas odliczania czasu wcisnieta i puszczenia dla stanu ST_INTERAKCJA
 typedef enum
@@ -217,6 +217,12 @@ void InitIOs(void)
   device_state = ST_ENERGY_SAVING; // ropoczynamy od stanu uspienia
 }
 
+static void SetFeedbackValues(uint16 fill_value)
+{
+  for (int i = 0; i < MAX_NUM_ACTIONS; i++)
+    holdandreleasetime[i] = fill_value;
+}
+
 #define TIME_10SECS (50000UL) // 0,2 ms * 50 000 = 10 sekund
 #define TIME_120SECS (600000UL) // 0,2 ms * 600 000 = 120 sekund
 #define TIME_20SECS (100000UL)
@@ -243,13 +249,14 @@ ISR(TIMER2_COMP_vect)
   static uint8  key_state_interakcja = INITIAL_KEY_STATE;
   static uint16 keycnt2 = 0;
   static uint16 button_state_time = 0; // 0,2 ms * 0xFFFF = 13 s (max czasu)
-  static uint32 sequence_time = 0; // zeby sprawdzac maksymalny czas interakcji
+  static uint32 temp_timer = 0; // zeby sprawdzac maksymalny czas interakcji i czas oczekiwania max
   // Obsluga wybudzania
   static uint16 wake_up_timer = 0;
   static uint8  wake_up_cnt = 0;
 
   static uint8  how_many_times_sent = 0;
-  static uint8  activity_rate;
+  // zaczynamy od maxa i lecimy w dol
+  static uint32 activity_rate = UINT32_MAX;
 
   static uint16 delay_before_sleep_cnt = 0;
 
@@ -357,14 +364,18 @@ ISR(TIMER2_COMP_vect)
   // Obsluga stanu INTERAKCJA po wylosowaniu i wibrowaniu silnika
   if (device_state == ST_INTERAKCJA)
   {
-    if (key_state_interakcja != INITIAL_KEY_STATE)
-      sequence_time++;
+    temp_timer++;
 
     // jesli czas sekewencji przekroczono wpisz do wszystkich
     // maks dlugosci i potraktuj jako koniec sekwencji
-    if (sequence_time >= TIME_30SECS)
+    if (temp_timer >= TIME_30SECS)
     {
-      sequence_time = 0;
+      temp_timer = 0;
+      saved_states = num_actions;
+      SetFeedbackValues(UINT16_MAX);
+      #if DEBUG_STATE == _ON
+      StrToSerial("\nPrzekroczono czas");
+      #endif
     }
 
     if (!keycnt2 && (saved_states < num_actions))
@@ -373,6 +384,10 @@ ISR(TIMER2_COMP_vect)
       // mierzenie od wcisniecia, a wiec oczekuje na wcisniecie przycisku
       if ((key_state_interakcja == INITIAL_KEY_STATE) && (LEVER_PRESSED))
       {
+        // poprzednio odliczal w oczekiwaniu na reakcje, od teraz odlicza cala
+        // ciagla dlugosc odpowiedzi, nie moze byc wieksza niz 30 sec
+        temp_timer = 0;
+
         // debouncing wcisnieto przycisk
         keycnt2 = ISR_DEBOUNCE_CNT;
         key_state_interakcja = BUTTON_PRESSED;
@@ -491,7 +506,7 @@ ISR(TIMER2_COMP_vect)
       // wcisnieto po dlugiej przerwie
       if (LEVER_PRESSED)
       {
-        #if DEBUG_STATE
+        #if DEBUG_STATE == _ON
         StrToSerial("...w koncu wcisnal\n");
         #endif
         keycnt2 = ISR_DEBOUNCE_CNT;
@@ -518,14 +533,6 @@ ISR(TIMER2_COMP_vect)
 
         // kopiuje dane do struktury
         memcpy((void *)Sequence.hnr_time, (void *)holdandreleasetime, (sizeof(Sequence.hnr_time)));
-
-        #if DEBUG_STATE == _ON
-        for (int k = 0; k < MAX_NUM_ACTIONS; k++)
-        {
-//          PutUInt16ToSerial(Sequence.hnr_time[k], TRUE, 5);
-//          StrToSerial("\n");
-        }
-        #endif
 
         #if DEBUG_STATE == _ON
         StrToSerial("\nInterakcja nr:");
@@ -564,7 +571,7 @@ ISR(TIMER2_COMP_vect)
     // przesun na poczatek
     hnr_time_ptr = holdandreleasetime;
     device_state = ST_OCENA;
-    sequence_time = 0;
+    temp_timer = 0;
   }
 
   if (keycnt2 > 0)
@@ -581,7 +588,8 @@ ISR(TIMER2_COMP_vect)
     {
       activity_rate = EstimateActivity(activity_rate);
       #if DEBUG_STATE == _ON
-      PutUInt8ToSerial(activity_rate);
+      StrToSerial("\n");
+      //PutUInt32ToSerial(activity_rate, FALSE, 10);
       StrToSerial("\nOcena niezaimplementowana, usypianie\n");
       #endif
     }
@@ -632,17 +640,17 @@ uint32 CalcGamma(LastSequence sequence)
  * czyscic obie tablice.
  * [in] uint16[] hnr_time - wskaznik na tablice z wynikami hold and release
  * [in] uint16[] rnd_values - wskaznik na tablice z dlugosciami sekwencji
- * [in] uint8 current_activity - aktywnosc z uwzglednieniem poprzednich akcji
- * [out] uint8 - estymowana aktywnosc
+ * [in] uint32 current_activity - aktywnosc z uwzglednieniem poprzednich akcji
+ * [out] uint32 - estymowana aktywnosc
  *******************************************************************************
  */
-static uint8 EstimateActivity(uint8 current_activity)
+static uint32 EstimateActivity(uint32 current_activity)
 {
   uint8 i;
-  uint8 activity = 0;
+  uint32 activity = 0;
   float alfa = 0;
   uint8 beta = 2, gamma = 1;
-  uint32 beta_fractor, gamma_fractor; // rownanie
+  uint32 beta_factor, gamma_factor; // rownanie
 
   Sequence.whole_random_sequence = 0;
   Sequence.whole_user_sequence = 0;
@@ -676,17 +684,17 @@ static uint8 EstimateActivity(uint8 current_activity)
   for (i = 0; i < MAX_NUM_ACTIONS; i++)
     Sequence.extended_user_seq[i] = alfa * Sequence.rnd_time[i];
 
-  beta_fractor = CalcBeta(Sequence);
-  gamma_fractor = CalcGamma(Sequence);
+  beta_factor = CalcBeta(Sequence);
+  gamma_factor = CalcGamma(Sequence);
 
   #if DEBUG_STATE == _ON
   StrToSerial("\nBeta:");
-  PutUInt32ToSerial(beta_fractor, FALSE, 7);
+  PutUInt32ToSerial(beta_factor, FALSE, 7);
   StrToSerial("\nGamma:");
-  PutUInt32ToSerial(gamma_fractor, FALSE, 7);
+  PutUInt32ToSerial(gamma_factor, FALSE, 7);
   #endif
 
-  activity = current_activity - beta * beta_fractor - gamma * gamma_fractor;
+  activity = current_activity - beta * beta_factor - gamma * gamma_factor;
 
   return activity;
 }
