@@ -30,7 +30,8 @@ typedef enum
   ST_WIBROWANIE,
   ST_INTERAKCJA,          // rejestrowanie odpowiedzi uzytkownika
   ST_OCENA,                // ocena "jakosci" odzworowania sygnalu losowego
-  ST_ENERGY_SAVING
+  ST_ENERGY_SAVING,
+  ST_DELAY_ACTION
 } TDeviceStates;
 
 typedef unsigned char uchar;

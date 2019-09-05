@@ -23,6 +23,8 @@ volatile uchar random_lsb;
 volatile uchar change_random;
 volatile uchar random_values[NUM_RND];
 volatile uchar device_state;
+volatile uchar device_next_state;
+volatile uint32 delay_timer_cnt;
 
 // w tej tablicy beda sie znajdowac wartosci czasow wibrowania sekwencji
 // pogrupowane ze wzgledu na to ze zostana zsumowane z tablicy random values

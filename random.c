@@ -159,7 +159,7 @@ ISR(ADC_vect)
       TurnADCOff;
       // przejdz do wibrowania
 
-      device_state = ST_WIBROWANIE;
+      DelayandSetNextState(5, ST_WIBROWANIE);
     }
   }
 

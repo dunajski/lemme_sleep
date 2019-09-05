@@ -217,6 +217,23 @@ void InitIOs(void)
   device_state = ST_ENERGY_SAVING; // ropoczynamy od stanu uspienia
 }
 
+/*
+ *******************************************************************************
+ * Ustawia delay w Timerze2 w sekundach
+ *******************************************************************************
+ */
+void DelayandSetNextState(uint8 delay_s, uint8 next_state)
+{
+  device_state = ST_DELAY_ACTION;
+
+  // przerwanie co 0,2 ms czyli 0,2 ms * 5000 = 1s
+  if (delay_s * 5000 < UINT32_MAX)
+    delay_timer_cnt = delay_s * 5000;
+  else
+    delay_timer_cnt = UINT32_MAX;
+  device_next_state = next_state;
+}
+
 static void SetFeedbackValues(uint16 fill_value)
 {
   for (int i = 0; i < MAX_NUM_ACTIONS; i++)
@@ -259,6 +276,17 @@ ISR(TIMER2_COMP_vect)
   static uint32 activity_rate = UINT32_MAX;
 
   static uint16 delay_before_sleep_cnt = 0;
+
+  // odliczanie sie skonczylo i przechodzimy w kolejny ustawiony stan
+  if (delay_timer_cnt == 0 && device_state == ST_DELAY_ACTION)
+    device_state = device_next_state;
+
+  // tutaj trwa opoznienie, return bo nie chcemy niczego innego wykonywac
+  if (delay_timer_cnt)
+  {
+    delay_timer_cnt--;
+    return;
+  }
 
   // musza byc niepatrzyste
   if ((num_actions % 2) != 1)

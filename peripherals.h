@@ -165,4 +165,11 @@ void GoToSleep(void);
  */
 void InitExternalInterupt1(void);
 
+/*
+ *******************************************************************************
+ * Ustawia delay w Timerze2 w sekundach
+ *******************************************************************************
+ */
+void DelayandSetNextState(uint8 delay_s, uint8 next_state);
+
 #endif /* PERIPHERALS_H_ */
