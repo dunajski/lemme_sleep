@@ -277,6 +277,8 @@ ISR(TIMER2_COMP_vect)
 
   static uint16 delay_before_sleep_cnt = 0;
 
+  static uint8 test_cnt = 0;
+
   // odliczanie sie skonczylo i przechodzimy w kolejny ustawiony stan
   if (delay_timer_cnt == 0 && device_state == ST_DELAY_ACTION)
     device_state = device_next_state;
@@ -611,21 +613,30 @@ ISR(TIMER2_COMP_vect)
   // Obsluga stanu INTERAKCJA po wylosowaniu i wibrowaniu silnika
   if (device_state == ST_OCENA)
   {
-    delay_before_sleep_cnt++;
-    if (delay_before_sleep_cnt == 10)
+    if (test_cnt > 7)
     {
-      activity_rate = EstimateActivity(activity_rate);
-      #if DEBUG_STATE == _ON
-      StrToSerial("\n");
-      //PutUInt32ToSerial(activity_rate, FALSE, 10);
-      StrToSerial("\nOcena niezaimplementowana, usypianie\n");
-      #endif
-    }
+      test_cnt = 0;
+      delay_before_sleep_cnt++;
+      if (delay_before_sleep_cnt == 10)
+      {
+        activity_rate = EstimateActivity(activity_rate);
+        #if DEBUG_STATE == _ON
+        StrToSerial("\n");
+        //PutUInt32ToSerial(activity_rate, FALSE, 10);
+        StrToSerial("\nOcena niezaimplementowana, usypianie\n");
+        #endif
+      }
+      if (delay_before_sleep_cnt >= UINT16_MAX / 2)
+      {
+        delay_before_sleep_cnt = 0;
+        device_state = ST_ENERGY_SAVING;
+      }
 
-    if (delay_before_sleep_cnt >= UINT16_MAX/2)
+    }
+    else
     {
-      delay_before_sleep_cnt = 0;
-      device_state = ST_ENERGY_SAVING;
+      test_cnt++;
+      DelayandSetNextState(5, ST_LOSOWANIE);
     }
   }
   //============================================================================
