@@ -91,7 +91,7 @@ typedef struct
 extern LastSequence Sequence;
 
 extern volatile uint8 num_actions;
-
+extern volatile uint8 delay_between_sequences_s;
 /*
  *******************************************************************************
  * Funkcja do zmiany wartosci 16bitowej w bloku, uniemozliwiajacym nadpisanie

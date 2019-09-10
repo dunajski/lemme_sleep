@@ -247,7 +247,8 @@ static void SetFeedbackValues(uint16 fill_value)
 #define PRESS_TO_WAKE_UP_COUNT (3)
 #define ISR_DEBOUNCE_CNT (300) // 300 * 0,2 ms = 60 ms
 
-volatile uint8  num_actions = 5; // 5 = 3H2R, 3 = 2H1R
+volatile uint8 num_actions = 5;  // 5 = 3H2R, 3 = 2H1R
+volatile uint8 delay_between_sequences_s = 5; // na razie 5 sekund w trakcie prototypowania
 
 /*
  *******************************************************************************
@@ -636,7 +637,27 @@ ISR(TIMER2_COMP_vect)
     else
     {
       test_cnt++;
-      DelayandSetNextState(5, ST_LOSOWANIE);
+      DelayandSetNextState(delay_between_sequences_s, ST_LOSOWANIE);
+    }
+   // tutaj zamierzona obsluga activity rate'a
+    // nigty takiego switcha nie robilem takze nie wiem czy zadziala
+    switch (TRUE)
+    {
+      case (activity_rate < UINT32_MAX * 0.1):
+          delay_between_sequences_s = 60;
+      break;
+      case (activity_rate < UINT32_MAX * 0.3):
+          delay_between_sequences_s = 40;
+      break;
+      case (activity_rate < UINT32_MAX * 0.6):
+          delay_between_sequences_s = 20;
+      break;
+      case (activity_rate < UINT32_MAX * 0.9):
+          delay_between_sequences_s = 15;
+      break;
+      default:
+        delay_between_sequences_s = 5;
+      break;
     }
   }
   //============================================================================
