@@ -615,7 +615,6 @@ ISR(TIMER2_COMP_vect)
   {
     if (test_cnt > 7)
     {
-      test_cnt = 0;
       delay_before_sleep_cnt++;
       if (delay_before_sleep_cnt == 10)
       {
@@ -628,6 +627,7 @@ ISR(TIMER2_COMP_vect)
       }
       if (delay_before_sleep_cnt >= UINT16_MAX / 2)
       {
+        test_cnt = 0;
         delay_before_sleep_cnt = 0;
         device_state = ST_ENERGY_SAVING;
       }
