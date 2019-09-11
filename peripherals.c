@@ -22,6 +22,7 @@
 volatile uint16 * hnr_time_ptr = holdandreleasetime;
 
 static uint32 EstimateActivity(uint32 current_activity);
+static uint32 SetDelayBeetwenSequences(uint32 tmp);
 
 // stany przycisku podczas odliczania czasu wcisnieta i puszczenia dla stanu ST_INTERAKCJA
 typedef enum
@@ -638,30 +639,25 @@ ISR(TIMER2_COMP_vect)
     {
       test_cnt++;
       DelayandSetNextState(delay_between_sequences_s, ST_LOSOWANIE);
-    }
-   // tutaj zamierzona obsluga activity rate'a
-    // nigty takiego switcha nie robilem takze nie wiem czy zadziala
-    switch (TRUE)
-    {
-      case (activity_rate < UINT32_MAX * 0.1):
-          delay_between_sequences_s = 60;
-      break;
-      case (activity_rate < UINT32_MAX * 0.3):
-          delay_between_sequences_s = 40;
-      break;
-      case (activity_rate < UINT32_MAX * 0.6):
-          delay_between_sequences_s = 20;
-      break;
-      case (activity_rate < UINT32_MAX * 0.9):
-          delay_between_sequences_s = 15;
-      break;
-      default:
-        delay_between_sequences_s = 5;
-      break;
+      uint32 temp = UINT32_MAX - activity_rate;
+
+      delay_between_sequences_s = SetDelayBeetwenSequences(temp);
     }
   }
   //============================================================================
+}
 
+
+static uint32 SetDelayBeetwenSequences(uint32 tmp)
+{
+  if (tmp > UINT32_MAX * 0.9)      tmp = 6;
+  else if (tmp > UINT32_MAX * 0.6) tmp = 4;
+  else if (tmp > UINT32_MAX * 0.3) tmp = 2;
+  else if (tmp > UINT32_MAX * 0.1) tmp = 1;
+  else                             tmp = 3;
+  StrToSerial("\nSekund przerwy:");
+  PutUInt32ToSerial(tmp, FALSE, sizeof(uint32));
+  return tmp;
 }
 
 uint32 CalcBeta(LastSequence sequence)
