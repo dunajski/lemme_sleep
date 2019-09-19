@@ -36,7 +36,8 @@ typedef enum
   BUTTON_RELEASED_TOO_LONG  // stan po przekroczeniu maks czasu puszczenia (10 s)
 } TKeyInterakcjastates;
 
-LastSequence Sequence;
+volatile TLastSequence Sequence;
+volatile TSequenceProperties Seq_props;
 
 /*
  *******************************************************************************
@@ -248,8 +249,7 @@ static void SetFeedbackValues(uint16 fill_value)
 #define PRESS_TO_WAKE_UP_COUNT (3)
 #define ISR_DEBOUNCE_CNT (300) // 300 * 0,2 ms = 60 ms
 
-volatile uint8 num_actions = 5;  // 5 = 3H2R, 3 = 2H1R
-volatile uint8 delay_between_sequences_s = 5; // na razie 5 sekund w trakcie prototypowania
+volatile TSequenceProperties Seq_props = {0, 5, 5};  // 5 = 3H2R, 3 = 2H1R
 
 /*
  *******************************************************************************
@@ -281,6 +281,7 @@ ISR(TIMER2_COMP_vect)
 
   static uint8 test_cnt = 0;
 
+
   // odliczanie sie skonczylo i przechodzimy w kolejny ustawiony stan
   if (delay_timer_cnt == 0 && device_state == ST_DELAY_ACTION)
     device_state = device_next_state;
@@ -292,15 +293,21 @@ ISR(TIMER2_COMP_vect)
     return;
   }
 
+  if (Seq_props.fails_in_row > 3 && Seq_props.num_actions > 1)
+  {
+    Seq_props.num_actions--;
+    Seq_props.fails_in_row = 0;
+  }
+
   // musza byc niepatrzyste
-  if ((num_actions % 2) != 1)
-    num_actions--;
+  if ((Seq_props.num_actions % 2) != 1)
+    Seq_props.num_actions--;
   // zabezpieczenie przed przepelnieniem albo zanizeniem minimalnej ilosci akcji
   // moze byc albo 1 albo 3 albo
-  if (num_actions > 5)
-    num_actions = 5;
-  else if (num_actions < 3)
-    num_actions = 3;
+  if (Seq_props.num_actions > 5)
+    Seq_props.num_actions = 5;
+  else if (Seq_props.num_actions < 3)
+    Seq_props.num_actions = 3;
 
   // Obsluga przycisku dla wszystkich stanow
   if (keycnt == 0)
@@ -403,14 +410,15 @@ ISR(TIMER2_COMP_vect)
     if (temp_timer >= TIME_30SECS)
     {
       temp_timer = 0;
-      saved_states = num_actions;
+      saved_states = Seq_props.num_actions;
+      Seq_props.fails_in_row++;
       SetFeedbackValues(UINT16_MAX);
       #if DEBUG_STATE == _ON
       StrToSerial("\nPrzekroczono czas");
       #endif
     }
 
-    if (!keycnt2 && (saved_states < num_actions))
+    if (!keycnt2 && (saved_states < Seq_props.num_actions))
     {
       // aby rozpoczac mierzenie hold and release musi byc stan init, zeby mozna bylo rozpoczac
       // mierzenie od wcisniecia, a wiec oczekuje na wcisniecie przycisku
@@ -549,7 +557,7 @@ ISR(TIMER2_COMP_vect)
     }
 
     // jesli zapisano piec stanow 3H i 2R to zakoncz i przejdz do oceny
-    if (saved_states >= num_actions)
+    if (saved_states >= Seq_props.num_actions)
     {
 
       // przed pierwszym holdem wyswietl liczbe kolejnej odebranej interakcji
@@ -595,7 +603,7 @@ ISR(TIMER2_COMP_vect)
       index++;
     }
 
-  if (index >= num_actions)
+  if (index >= Seq_props.num_actions)
   {
     key_state_interakcja = INITIAL_KEY_STATE;
     saved_states = 0;
@@ -638,10 +646,10 @@ ISR(TIMER2_COMP_vect)
     else
     {
       test_cnt++;
-      DelayandSetNextState(delay_between_sequences_s, ST_LOSOWANIE);
+      DelayandSetNextState(Seq_props.delay_between_sequences_s, ST_LOSOWANIE);
       uint32 temp = UINT32_MAX - activity_rate;
 
-      delay_between_sequences_s = SetDelayBeetwenSequences(temp);
+      Seq_props.delay_between_sequences_s = SetDelayBeetwenSequences(temp);
     }
   }
   //============================================================================
@@ -660,7 +668,7 @@ static uint32 SetDelayBeetwenSequences(uint32 tmp)
   return tmp;
 }
 
-uint32 CalcBeta(LastSequence sequence)
+uint32 CalcBeta(TLastSequence sequence)
 {
   int i;
   uint32 beta_sum = 0;
@@ -675,7 +683,7 @@ uint32 CalcBeta(LastSequence sequence)
   return beta_sum;
 }
 
-uint32 CalcGamma(LastSequence sequence)
+uint32 CalcGamma(TLastSequence sequence)
 {
   uint32 gamma_sum = 0;
 
@@ -685,6 +693,16 @@ uint32 CalcGamma(LastSequence sequence)
     gamma_sum = (sequence.whole_random_sequence - sequence.whole_extended_user_seq);
 
   gamma_sum /= sequence.whole_random_sequence;
+
+  // wartosc tego wspolczynnika powinna byc zblizona do 0 jesli
+  // uzytkownik poprawnie odtwarza sekwencje.
+  // jesli roznia sie znacznie (zakladam 50%) to nalezy zmniejszyc ilosc
+  // krokow w sekwencji.
+  if (sequence.whole_extended_user_seq < sequence.whole_random_sequence / 2 ||
+      (sequence.whole_extended_user_seq > sequence.whole_random_sequence * 2))
+  {
+    Seq_props.fails_in_row++;
+  }
 
   return gamma_sum;
 }
@@ -705,7 +723,6 @@ static uint32 EstimateActivity(uint32 current_activity)
   uint8 i;
   uint32 activity = 0;
   float alfa = 0;
-  uint8 beta = 2, gamma = 1;
   uint32 beta_factor, gamma_factor; // rownanie
 
   Sequence.whole_random_sequence = 0;
@@ -750,7 +767,7 @@ static uint32 EstimateActivity(uint32 current_activity)
   PutUInt32ToSerial(gamma_factor, FALSE, 7);
   #endif
 
-  activity = current_activity - beta * beta_factor - gamma * gamma_factor;
+  activity = current_activity - beta_factor - gamma_factor;
 
   return activity;
 }

@@ -63,7 +63,7 @@ ISR(TIMER0_COMP_vect)
 
     rnd_val_cnt++;
 
-    if (rnd_val_gr_idx >= num_actions)
+    if (rnd_val_gr_idx >= Seq_props.num_actions)
     {
       rnd_val_gr_idx = 0;
       device_state = ST_INTERAKCJA;

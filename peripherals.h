@@ -86,12 +86,19 @@ typedef struct
   uint32 whole_random_sequence;
   uint32 whole_extended_user_seq;
   uint8 current_act;
-} LastSequence;
+} TLastSequence;
 
-extern LastSequence Sequence;
+extern volatile TLastSequence Sequence;
 
-extern volatile uint8 num_actions;
-extern volatile uint8 delay_between_sequences_s;
+typedef struct
+{
+  uint8 fails_in_row;
+  uint8 num_actions;
+  uint8 delay_between_sequences_s;
+} TSequenceProperties;
+
+extern volatile TSequenceProperties Seq_props;
+
 /*
  *******************************************************************************
  * Funkcja do zmiany wartosci 16bitowej w bloku, uniemozliwiajacym nadpisanie
