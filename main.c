@@ -22,6 +22,7 @@ int main(void)
   InitIOs();
   InitExternalInterupt1();
   sei();
+
   while (1)
   {
     // zaczynamy od pojscia spac i oczekujemy wybudzenia trzykrotnym nacisnieciem dzwigni

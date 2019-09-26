@@ -95,9 +95,9 @@ typedef struct
   uint8 fails_in_row;
   uint8 num_actions;
   uint8 delay_between_sequences_s;
-} TSequenceProperties;
+} TSequenceParameters;
 
-extern volatile TSequenceProperties Seq_props;
+extern volatile TSequenceParameters Seq_params;
 
 /*
  *******************************************************************************

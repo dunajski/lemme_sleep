@@ -37,7 +37,7 @@ typedef enum
 } TKeyInterakcjastates;
 
 volatile TLastSequence Sequence;
-volatile TSequenceProperties Seq_props;
+volatile TSequenceParameters Seq_params;
 
 /*
  *******************************************************************************
@@ -249,7 +249,7 @@ static void SetFeedbackValues(uint16 fill_value)
 #define PRESS_TO_WAKE_UP_COUNT (3)
 #define ISR_DEBOUNCE_CNT (300) // 300 * 0,2 ms = 60 ms
 
-volatile TSequenceProperties Seq_props = {0, 5, 5};  // 5 = 3H2R, 3 = 2H1R
+volatile TSequenceParameters Seq_params = {0, 5, 5};  // 5 = 3H2R, 3 = 2H1R
 
 /*
  *******************************************************************************
@@ -293,21 +293,21 @@ ISR(TIMER2_COMP_vect)
     return;
   }
 
-  if (Seq_props.fails_in_row > 3 && Seq_props.num_actions > 1)
+  if (Seq_params.fails_in_row > 3 && Seq_params.num_actions > 1)
   {
-    Seq_props.num_actions--;
-    Seq_props.fails_in_row = 0;
+    Seq_params.num_actions--;
+    Seq_params.fails_in_row = 0;
   }
 
   // musza byc niepatrzyste
-  if ((Seq_props.num_actions % 2) != 1)
-    Seq_props.num_actions--;
+  if ((Seq_params.num_actions % 2) != 1)
+    Seq_params.num_actions--;
   // zabezpieczenie przed przepelnieniem albo zanizeniem minimalnej ilosci akcji
   // moze byc albo 1 albo 3 albo
-  if (Seq_props.num_actions > 5)
-    Seq_props.num_actions = 5;
-  else if (Seq_props.num_actions < 3)
-    Seq_props.num_actions = 3;
+  if (Seq_params.num_actions > 5)
+    Seq_params.num_actions = 5;
+  else if (Seq_params.num_actions < 3)
+    Seq_params.num_actions = 3;
 
   // Obsluga przycisku dla wszystkich stanow
   if (keycnt == 0)
@@ -410,15 +410,15 @@ ISR(TIMER2_COMP_vect)
     if (temp_timer >= TIME_30SECS)
     {
       temp_timer = 0;
-      saved_states = Seq_props.num_actions;
-      Seq_props.fails_in_row++;
+      saved_states = Seq_params.num_actions;
+      Seq_params.fails_in_row++;
       SetFeedbackValues(UINT16_MAX);
       #if DEBUG_STATE == _ON
       StrToSerial("\nPrzekroczono czas");
       #endif
     }
 
-    if (!keycnt2 && (saved_states < Seq_props.num_actions))
+    if (!keycnt2 && (saved_states < Seq_params.num_actions))
     {
       // aby rozpoczac mierzenie hold and release musi byc stan init, zeby mozna bylo rozpoczac
       // mierzenie od wcisniecia, a wiec oczekuje na wcisniecie przycisku
@@ -557,7 +557,7 @@ ISR(TIMER2_COMP_vect)
     }
 
     // jesli zapisano piec stanow 3H i 2R to zakoncz i przejdz do oceny
-    if (saved_states >= Seq_props.num_actions)
+    if (saved_states >= Seq_params.num_actions)
     {
 
       // przed pierwszym holdem wyswietl liczbe kolejnej odebranej interakcji
@@ -603,7 +603,7 @@ ISR(TIMER2_COMP_vect)
       index++;
     }
 
-  if (index >= Seq_props.num_actions)
+  if (index >= Seq_params.num_actions)
   {
     key_state_interakcja = INITIAL_KEY_STATE;
     saved_states = 0;
@@ -646,10 +646,10 @@ ISR(TIMER2_COMP_vect)
     else
     {
       test_cnt++;
-      DelayandSetNextState(Seq_props.delay_between_sequences_s, ST_LOSOWANIE);
+      DelayandSetNextState(Seq_params.delay_between_sequences_s, ST_LOSOWANIE);
       uint32 temp = UINT32_MAX - activity_rate;
 
-      Seq_props.delay_between_sequences_s = SetDelayBeetwenSequences(temp);
+      Seq_params.delay_between_sequences_s = SetDelayBeetwenSequences(temp);
     }
   }
   //============================================================================
@@ -701,7 +701,7 @@ uint32 CalcGamma(TLastSequence sequence)
   if (sequence.whole_extended_user_seq < sequence.whole_random_sequence / 2 ||
       (sequence.whole_extended_user_seq > sequence.whole_random_sequence * 2))
   {
-    Seq_props.fails_in_row++;
+    Seq_params.fails_in_row++;
   }
 
   return gamma_sum;
