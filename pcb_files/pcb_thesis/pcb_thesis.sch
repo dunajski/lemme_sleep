@@ -314,8 +314,8 @@ $Comp
 L Device:D D5
 U 1 1 5C474305
 P 8550 3350
-F 0 "D5" V 8504 3429 50  0000 L CNN
-F 1 "D" V 8595 3429 50  0000 L CNN
+F 0 "D5" V 8450 3150 50  0000 L CNN
+F 1 "D" V 8600 3150 50  0000 L CNN
 F 2 "Diode_SMD:D_SMC_Handsoldering" H 8550 3350 50  0001 C CNN
 F 3 "~" H 8550 3350 50  0001 C CNN
 	1    8550 3350
@@ -330,17 +330,6 @@ F 1 "GND" H 8555 3427 50  0000 C CNN
 F 2 "" H 8550 3600 50  0001 C CNN
 F 3 "" H 8550 3600 50  0001 C CNN
 	1    8550 3600
-	1    0    0    -1  
-$EndComp
-$Comp
-L Connector:Conn_01x02_Male J3
-U 1 1 5C478F49
-P 8950 3300
-F 0 "J3" H 9000 3400 50  0000 C CNN
-F 1 "goldpin 1x2" H 9900 4450 50  0001 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 8950 3300 50  0001 C CNN
-F 3 "~" H 8950 3300 50  0001 C CNN
-	1    8950 3300
 	1    0    0    -1  
 $EndComp
 NoConn ~ 5750 5750
@@ -690,27 +679,7 @@ Wire Wire Line
 Wire Wire Line
 	6500 3400 6500 3350
 Wire Wire Line
-	9150 3100 9500 3100
-Wire Wire Line
-	9150 3600 9500 3600
-Wire Wire Line
-	8550 2900 8550 3100
-Wire Wire Line
-	9150 3100 9150 3300
-Wire Wire Line
 	8550 3500 8550 3600
-Wire Wire Line
-	9150 3400 9150 3600
-Wire Wire Line
-	8550 3100 9150 3100
-Connection ~ 9150 3100
-Connection ~ 8550 3100
-Wire Wire Line
-	8550 3100 8550 3200
-Wire Wire Line
-	9150 3600 8550 3600
-Connection ~ 9150 3600
-Connection ~ 8550 3600
 Wire Wire Line
 	8200 2700 8250 2700
 Wire Wire Line
@@ -736,4 +705,39 @@ Wire Wire Line
 Wire Wire Line
 	6850 2650 6850 2850
 Connection ~ 6850 2850
+Wire Wire Line
+	8550 2900 8550 3200
+Wire Wire Line
+	9500 3600 9300 3600
+Wire Wire Line
+	9500 3100 9300 3100
+Text Label 9300 3100 2    50   ~ 0
+M+
+Text Label 9300 3600 2    50   ~ 0
+M-
+Connection ~ 8550 3500
+Connection ~ 8550 3200
+$Comp
+L Connector:Conn_01x02_Male J3
+U 1 1 5C478F49
+P 8750 3300
+F 0 "J3" H 8650 3250 50  0000 C CNN
+F 1 "goldpin 1x2" H 9700 4450 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 8750 3300 50  0001 C CNN
+F 3 "~" H 8750 3300 50  0001 C CNN
+	1    8750 3300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8950 3500 8950 3400
+Wire Wire Line
+	8550 3500 8950 3500
+Wire Wire Line
+	8950 3200 8950 3300
+Wire Wire Line
+	8550 3200 8950 3200
+Text Label 8950 3300 0    50   ~ 0
+M+
+Text Label 8950 3400 0    50   ~ 0
+M-
 $EndSCHEMATC
