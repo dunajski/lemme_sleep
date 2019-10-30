@@ -86,26 +86,17 @@ static void FillRandomValues(volatile uint16 random_values_grouped[MAX_NUM_ACTIO
 {
   uint8 i;
 
-//  // old style
-//  random_values_grouped[0] = random_values[0] + (1 << random_values[1]) + (2 << random_values[2]);
-////  random_values_grouped[1] = random_values[3] + (1 << random_values[4]);
-//  random_values_grouped[1] = 0x02;
-//  random_values_grouped[2] = random_values[5] + (1 << random_values[6]) + (2 << random_values[7]);
-////  random_values_grouped[3] = random_values[8] + (1 << random_values[9]);
-//  random_values_grouped[3] = 0x02;
-//  random_values_grouped[4] = random_values[10] + (1 << random_values[11]) + (2 << random_values[12]);
-
-//  for (i = 0; i < MAX_NUM_ACTIONS; i++)
-//    random_values_grouped[i] *= 500;
-
-
   for (i = 0; i < MAX_NUM_ACTIONS; i++)
   {
     random_values_grouped[i] = random_values[2 * i] * 1500 + random_values[2 * i + 1] * 1500 + 1000;
   }
 
+  // tymczasowe zmiany, stala sekwencja
+  random_values_grouped[0] = 4000;
   random_values_grouped[1] = 1000;
+  random_values_grouped[2] = 2000;
   random_values_grouped[3] = 1000;
+  random_values_grouped[4] = 1000;
 
   memcpy((void *)Sequence.rnd_time, (void *)random_values_grouped, (sizeof(Sequence.rnd_time)));
 

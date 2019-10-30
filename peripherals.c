@@ -665,6 +665,9 @@ static uint32 SetDelayBeetwenSequences(uint32 tmp)
   else                             tmp = 3;
   StrToSerial("\nSekund przerwy:");
   PutUInt32ToSerial(tmp, FALSE, sizeof(uint32));
+
+  // na stale
+  tmp = 10;
   return tmp;
 }
 
