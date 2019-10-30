@@ -332,17 +332,6 @@ F 3 "" H 8550 3600 50  0001 C CNN
 	1    8550 3600
 	1    0    0    -1  
 $EndComp
-$Comp
-L Connector:Conn_01x02_Male J3
-U 1 1 5C478F49
-P 8950 3400
-F 0 "J3" V 9000 3500 50  0000 C CNN
-F 1 "goldpin 1x2" H 9900 4550 50  0001 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 8950 3400 50  0001 C CNN
-F 3 "~" H 8950 3400 50  0001 C CNN
-	1    8950 3400
-	-1   0    0    1   
-$EndComp
 NoConn ~ 5750 5750
 NoConn ~ 5750 5650
 NoConn ~ 5750 4850
@@ -726,14 +715,29 @@ Text Label 9300 3100 2    50   ~ 0
 M+
 Text Label 9300 3600 2    50   ~ 0
 M-
-Wire Wire Line
-	8750 3400 8750 3500
-Wire Wire Line
-	8750 3500 8550 3500
 Connection ~ 8550 3500
-Wire Wire Line
-	8750 3300 8750 3200
-Wire Wire Line
-	8750 3200 8550 3200
 Connection ~ 8550 3200
+$Comp
+L Connector:Conn_01x02_Male J3
+U 1 1 5C478F49
+P 8750 3300
+F 0 "J3" H 8650 3250 50  0000 C CNN
+F 1 "goldpin 1x2" H 9700 4450 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 8750 3300 50  0001 C CNN
+F 3 "~" H 8750 3300 50  0001 C CNN
+	1    8750 3300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8950 3500 8950 3400
+Wire Wire Line
+	8550 3500 8950 3500
+Wire Wire Line
+	8950 3200 8950 3300
+Wire Wire Line
+	8550 3200 8950 3200
+Text Label 8950 3300 0    50   ~ 0
+M+
+Text Label 8950 3400 0    50   ~ 0
+M-
 $EndSCHEMATC
