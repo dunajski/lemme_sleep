@@ -6,7 +6,6 @@
  */
 
 #include <avr/interrupt.h>
-#include <avr/iom32.h>
 #include <avr/sleep.h>
 #include <util/atomic.h>
 #include <string.h>

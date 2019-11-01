@@ -7,7 +7,7 @@
 
 #ifndef PERIPHERALS_H_
 #define PERIPHERALS_H_
-
+#define F_CPU 8000000UL
 #include "communication.h"
 #include "random.h"
 #include "types.h"
