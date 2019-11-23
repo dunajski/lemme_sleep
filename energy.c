@@ -10,7 +10,7 @@
 
 /*
  *******************************************************************************
- * Do ustawienia przetwornika zeby mierzyc napiecie zasilania.
+ *  Ustawianie przetwornika ADC by mogl mierzyc napiecie zasilania.
  * Vref internal 2,56 V/ ADC1/ ISR EN/ Triggering manually/ fADC 125 kHz
  *******************************************************************************
  */
@@ -24,10 +24,9 @@ void SetAdcToMeasureSupplVoltage(void)
   ADCSRA |= (1 << ADPS1) | (1 << ADPS2);
 }
 
-
 /*
  *******************************************************************************
- * Przerwanie od wybudzania MCU pzyciskiem.
+ * Przerwanie od wybudzania MCU przyciskiem.
  *******************************************************************************
  */
 ISR(INT0_vect)

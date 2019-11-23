@@ -1,12 +1,7 @@
 /*
  * main.c
  *      Author: Dunajski
- *      thesis
  */
-#include <stdio.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
-
 #include "communication.h"
 #include "peripherals.h"
 #include "random.h"
@@ -18,7 +13,7 @@ int main(void)
   InitTimer0();
   InitTimer1();
   InitTimer2();
-  InitIOs();
+  InitIos();
   InitExternalInterupt1();
   sei();
 

@@ -5,15 +5,13 @@
  *      Author: Dunajski
  */
 
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
-#include <util/atomic.h>
-#include <string.h>
-
-#include <stdint.h>
+#include <avr/interrupt.h> // ISRs
+#include <avr/sleep.h> // sleep();
+#include <util/atomic.h> // ATOMIC_BLOCK
+#include <string.h> // memcpy
+#include <stdint.h> // UINT32_MAX
 #include "peripherals.h"
 #include "energy.h"
-
 
 #define TRUE  (1)
 #define FALSE (0)
@@ -99,8 +97,8 @@ void SetUint16_atomic(volatile uint16 * var_to_set, uint16 value)
 }
 
 #define BAUDRATE 9600UL
+#define F_CPU 8000000UL
 #define BAUD_REG ((F_CPU/(16*BAUDRATE))-1)
-
 /*
  *******************************************************************************
  * Inicjuje UART, 9600/8N1. Komunikacja na przerwaniach.
@@ -197,13 +195,13 @@ void InitAdc(void)
  * Inicjalizacja wejsc/wyjsc MCU. Tutaj ustawiam LEDy i stan poczatkowy appki.
  *******************************************************************************
  */
-void InitIOs(void)
+void InitIos(void)
 {
   STATE_LED_DIR = 1; // dioda testowa
   DEBUG_LED_DIR = 1; // dioda testowa
 
   MOTOR_DIR = 1; // sterowanie wl/wyl silnika (baza)
-  EMMITER_DIR = 1; // sterowanie napieciem zasilania silnika (emiter)
+  EMITER_DIR = 1; // sterowanie napieciem zasilania silnika (emiter)
   MOTOR_OFF;
 
   LEVER_PULLUP = 1;
@@ -220,7 +218,9 @@ void InitIOs(void)
 
 /*
  *******************************************************************************
- * Ustawia delay w Timerze2 w sekundach
+ *  Funkcja do wykonywania opoznienia miedzy kolejny stanami aplikacji.
+ * [in] delay_s - ilosc sekund opoznienia miedzy kolejnymi stanami,
+ * [in] next_state - stan jaki ustawic po opoznieniu, TDeviceStates.
  *******************************************************************************
  */
 void DelayandSetNextState(uint8 delay_s, uint8 next_state)

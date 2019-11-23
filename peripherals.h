@@ -7,7 +7,6 @@
 
 #ifndef PERIPHERALS_H_
 #define PERIPHERALS_H_
-#define F_CPU 8000000UL
 #include "communication.h"
 #include "random.h"
 #include "types.h"
@@ -18,10 +17,10 @@
 typedef struct PortABits
 {
   volatile uchar adc_pin :1;    // PA 0 losowanie
-  volatile uchar pwr_adc :1;    // PA 1 mierzenie napiecia zas.
+  volatile uchar pwr_adc :1;    // PA 1 mierzenie napiecia zas
   volatile uchar :4;            // PA 2-5
-  volatile uchar debug_led :1;  // PA 6 // do prototypowania nie beda lutowane
-  volatile uchar state_led :1;  // PA 7 // do prototypowania nie beda lutowane
+  volatile uchar debug_led :1;  // PA 6
+  volatile uchar state_led :1;  // PA 7
 } TPortABits;
 
 typedef struct PortDBits
@@ -29,34 +28,34 @@ typedef struct PortDBits
   volatile uchar :2;            // PD 0-1
   volatile uchar action_lever:1;// PD 2
   volatile uchar :2;            // PD 3-4
-  volatile uchar emmiter :1;    // PD 5 (OCR1A)
+  volatile uchar emiter :1;     // PD 5 (OCR1A)
   volatile uchar motor :1;      // PD 6
   volatile uchar :1;            // PD 7
 } TPortDBits;
 
-#define STATE_LED_VAL ((TPortABits *)&PINA)->state_led
-#define STATE_LED_DIR ((TPortABits *)&DDRA)->state_led
+#define STATE_LED_VAL  ((TPortABits *)&PINA)->state_led
+#define STATE_LED_DIR  ((TPortABits *)&DDRA)->state_led
 #define STATE_LED_OUT ((TPortABits *)&PORTA)->state_led
 
-#define DEBUG_LED_VAL ((TPortABits *)&PINA)->debug_led
-#define DEBUG_LED_DIR ((TPortABits *)&DDRA)->debug_led
+#define DEBUG_LED_VAL  ((TPortABits *)&PINA)->debug_led
+#define DEBUG_LED_DIR  ((TPortABits *)&DDRA)->debug_led
 #define DEBUG_LED_OUT ((TPortABits *)&PORTA)->debug_led
 
 #define ADC_PIN_VAL     ((TPortABits *)&PINA)->adc_pin
 #define ADC_PIN_DIR     ((TPortABits *)&DDRA)->adc_pin
-#define ADC_PIN_PULLUP  ((TPortABits *)&PORTA)->adc_pin
+#define ADC_PIN_PULLUP ((TPortABits *)&PORTA)->adc_pin
 
 #define PWR_ADC_VAL     ((TPortABits *)&PINA)->pwr_adc
 #define PWR_ADC_DIR     ((TPortABits *)&DDRA)->pwr_adc
-#define PWR_ADC_PULLUP  ((TPortABits *)&PORTA)->pwr_adc
+#define PWR_ADC_PULLUP ((TPortABits *)&PORTA)->pwr_adc
 
-#define MOTOR_VAL ((TPortDBits *)&PIND)->motor
-#define MOTOR_DIR ((TPortDBits *)&DDRD)->motor
+#define MOTOR_VAL  ((TPortDBits *)&PIND)->motor
+#define MOTOR_DIR  ((TPortDBits *)&DDRD)->motor
 #define MOTOR_OUT ((TPortDBits *)&PORTD)->motor
 
-#define EMMITER_VAL ((TPortDBits *)&PIND)->emmiter
-#define EMMITER_DIR ((TPortDBits *)&DDRD)->emmiter
-#define EMMITER_OUT ((TPortDBits *)&PORTD)->emmiter
+#define EMITER_VAL  ((TPortDBits *)&PIND)->emiter
+#define EMITER_DIR  ((TPortDBits *)&DDRD)->emiter
+#define EMITER_OUT ((TPortDBits *)&PORTD)->emiter
 
 #define LEVER_VAL    ((TPortDBits *)&PIND)->action_lever
 #define LEVER_DIR    ((TPortDBits *)&DDRD)->action_lever
@@ -154,7 +153,7 @@ void InitAdc(void);
  * Inicjalizacja wejsc/wyjsc MCU. Tutaj ustawiam LEDy i stan poczatkowy appki.
  *******************************************************************************
  */
-void InitIOs(void);
+void InitIos(void);
 
 /*
  *******************************************************************************
@@ -174,7 +173,9 @@ void InitExternalInterupt1(void);
 
 /*
  *******************************************************************************
- * Ustawia delay w Timerze2 w sekundach
+ *  Funkcja do wykonywania opoznienia miedzy kolejny stanami aplikacji.
+ * [in] delay_s - ilosc sekund opoznienia miedzy kolejnymi stanami,
+ * [in] next_state - stan (TDeviceStates) jaki ustawic po opoznieniu.
  *******************************************************************************
  */
 void DelayandSetNextState(uint8 delay_s, uint8 next_state);

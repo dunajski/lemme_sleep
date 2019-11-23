@@ -39,12 +39,13 @@ void PutUInt8ToSerial(uint8 integer)
  */
 void PutUInt16ToSerial(uint16 value, uchar leading_zeros, uchar size)
 {
+  uint8 i;
   uint8 how_many_digits = 0;
   uint8 ascii[_UINT16_MAX_ASCII_DIGITS];
 
   how_many_digits = ConvertUInt16ToAscii(value, ascii, leading_zeros, size);
 
-  for (int i = 0; i < how_many_digits; i++)
+  for (i = 0; i < how_many_digits; i++)
     PutToSerial(ascii[i]);
 }
 
@@ -72,8 +73,8 @@ void PutSInt16ToSerial(int16 value, uchar leading_zeros, uchar size)
   }
 
   how_many_digits = ConvertUInt16ToAscii((uint16)value, ascii, leading_zeros, size);
-
-  for (; i < how_many_digits; i++)
+  // SMELL, to tak powinno byc?
+  for (i = 0; i < how_many_digits; i++)
     PutToSerial(ascii[i]);
 }
 

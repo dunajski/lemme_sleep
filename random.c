@@ -16,9 +16,9 @@ volatile uchar change_random = 0;
 
 /*
  *******************************************************************************
- * Obliczenie rejestru OCR1A dla Timer1, zaleznie od napiecia zasilania, zeby
+ * Obliczenie rejestru OCR1A dla Timer1, zaleznie od napiecia zasilania zeby 
  * uzyskac bezpieczne napiecie dla silnika ~3,3 V.
- * [in] adc_voltage - wartosc zmierzonego napiecia zasilania,
+ * [in] adc_voltage - wartosc zmierzonego napiecia zasilania.
  *******************************************************************************
  */
 static void SetOCRForProperVoltage(uint16 adc_voltage);
@@ -195,9 +195,9 @@ ISR(ADC_vect)
 #define VCC_3V6_ADC_VAL 520UL // wartosc przetwornika dla napiecia 3V6, dzielnik napiecia i Vref 2,56V
 /*
  *******************************************************************************
- * Obliczenie rejestru OCR1A dla Timer1, zaleznie od napiecia zasilania, zeby
+ * Obliczenie rejestru OCR1A dla Timer1, zaleznie od napiecia zasilania zeby 
  * uzyskac bezpieczne napiecie dla silnika ~3,3 V.
- * [in] adc_voltage - wartosc zmierzonego napiecia zasilania,
+ * [in] adc_voltage - wartosc zmierzonego napiecia zasilania.
  *******************************************************************************
  */
 static void SetOCRForProperVoltage(uint16 adc_voltage)
