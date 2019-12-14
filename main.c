@@ -5,6 +5,7 @@
 #include "communication.h"
 #include "peripherals.h"
 #include "random.h"
+#include <util/delay.h>
 
 int main(void)
 {
@@ -16,6 +17,15 @@ int main(void)
   InitIos();
   InitExternalInterupt1();
   sei();
+
+  for (int i = 0; i < 5; i++)
+  {
+  STATE_LED_ON;
+  _delay_ms(500);
+  STATE_LED_OFF;
+  _delay_ms(500);
+
+  }
 
   while (1)
   {
