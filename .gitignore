@@ -1,0 +1,10 @@
+.project
+.cproject
+/Release
+/docs
+.settings/
+.vscode/
+*.o
+*.exe
+*.hex
+*.bin
