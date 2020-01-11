@@ -2,6 +2,13 @@
  * main.c
  *      Author: Dunajski
  */
+#define F_CPU 8000000
+
+#include <stdio.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+
 #include "communication.h"
 #include "peripherals.h"
 #include "random.h"
@@ -21,10 +28,11 @@ int main(void)
   for (int i = 0; i < 5; i++)
   {
   STATE_LED_ON;
-  _delay_ms(500);
+  MOTOR_ON;
+  _delay_ms(5000);
   STATE_LED_OFF;
-  _delay_ms(500);
-
+  MOTOR_OFF;
+  _delay_ms(5000);
   }
 
   while (1)

@@ -5,11 +5,14 @@
  *      Author: Dunajski
  */
 
-#include <avr/interrupt.h> // ISRs
-#include <avr/sleep.h> // sleep();
-#include <util/atomic.h> // ATOMIC_BLOCK
-#include <string.h> // memcpy
-#include <stdint.h> // UINT32_MAX
+#include <avr/interrupt.h>
+#include <avr/io.h>
+#include <avr/iom32a.h>
+#include <avr/sleep.h>
+#include <util/atomic.h>
+#include <string.h>
+
+#include <stdint.h>
 #include "peripherals.h"
 #include "energy.h"
 
@@ -97,7 +100,6 @@ void SetUint16_atomic(volatile uint16 * var_to_set, uint16 value)
 }
 
 #define BAUDRATE 9600UL
-#define F_CPU 8000000UL
 #define BAUD_REG ((F_CPU/(16*BAUDRATE))-1)
 /*
  *******************************************************************************
