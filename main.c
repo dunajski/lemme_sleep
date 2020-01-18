@@ -27,12 +27,12 @@ int main(void)
 
   for (int i = 0; i < 5; i++)
   {
-  STATE_LED_ON;
-  MOTOR_ON;
-  _delay_ms(5000);
-  STATE_LED_OFF;
-  MOTOR_OFF;
-  _delay_ms(5000);
+    STATE_LED_ON;
+    MOTOR_ON;
+    _delay_ms(5000);
+    STATE_LED_OFF;
+    MOTOR_OFF;
+    _delay_ms(5000);
   }
 
   while (1)

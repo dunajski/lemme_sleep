@@ -15,5 +15,4 @@ This simple device  should be able to do few simple tasks listed below:
 ## Additional informations:
 
 * in this project I used ATmega32 MCU,
-* small (10 mm x 2 mm) vibrating motor,
-* repository issues are made by me, while I'm using cards in GitKraken Glo :octopus:.
+* small (10 mm x 2 mm) vibrating motor.
