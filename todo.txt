@@ -1,0 +1,8 @@
+Lista TODO:
+Niestety jest critical w obsludze bramki tranzystora,
+ze wzgledu na wyrzucenie sterowania napiecia zasilania,
+na emiterze nalezy inaczej obsluzyc bramke.
+
+Aby ograniczyc napiecie mozna "czesto" wlaczac i rozlaczac
+tranzystora poprzez sterowanie bramka. Nalezy sprawdzic
+predkosc zalaczania i rozlaczania tranzystora.
