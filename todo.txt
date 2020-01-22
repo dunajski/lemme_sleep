@@ -6,3 +6,18 @@ na emiterze nalezy inaczej obsluzyc bramke.
 Aby ograniczyc napiecie mozna "czesto" wlaczac i rozlaczac
 tranzystora poprzez sterowanie bramka. Nalezy sprawdzic
 predkosc zalaczania i rozlaczania tranzystora.
+
+Wedlug noty katalogowej tranzystor ma czestotliwosc graniczna 115 MHz,
+(niecale 9 ns :-D) a zakladam 10 ms (100 Hz) na sterowanie silnika.
+Czyli najprosciej ujmujac jesli silnik ma byc zalaczony przez itnerwal
+czasu X, ale napiecie na zaciskach przewyzsza maksymalne napiecie
+dozwolone to napiecie powinno zostac wygenerowane w jak PWM.
+To znaczy stan '1' i '0' na wejsciu bramki tranzystora
+na tyle czesto na ile moze tranzystora i na tyle szybko by wplynelo to
+na zachowanie silnika.
+
+Przyklad jesli napiecie na emiterze rowne jest 5V, a dozwolone
+maksymalne rowne jest 3,5V, a silnik ma byc uruchomiony przez X.
+Z tego wychodzi, ze sumaryczny czas zalaczenia musi wynosi 0,7X.
+To wszystko zadziala przy zalozeniu, ze mozna na tyle szybko
+sterowac wyjsciem MCU oraz tranzystor jest w stanie sie przelaczyc.
