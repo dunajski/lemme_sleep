@@ -16,3 +16,7 @@ This simple device  should be able to do few simple tasks listed below:
 
 * in this project I used ATmega32 MCU,
 * small (10 mm x 2 mm) vibrating motor.
+
+
+### SUMMARY
+* I won't continue develop on this repository.
